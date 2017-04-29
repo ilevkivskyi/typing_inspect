@@ -1,6 +1,8 @@
 Typing Inspect
 ==============
 
+[![Build Status](https://travis-ci.org/ilevkivskyi/typing_inspect.svg)](https://travis-ci.org/ilevkivskyi/typing_inspect)
+
 The ``typing_inspect`` module defines experimental API for runtime
 inspection of types defined in the Python standard ``typing`` module.
 Works with ``typing`` version ``3.5.3`` and later. Example usage:
