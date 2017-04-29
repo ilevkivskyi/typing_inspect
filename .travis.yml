@@ -14,6 +14,6 @@ install:
 - pip install -r test-requirements.txt
 
 script:
-  - py.test typing_inspect
+  - py.test typing_inspect.py
   - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8 --config=.flake8-tests test_typing_inspect.py; fi
