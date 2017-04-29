@@ -4,7 +4,7 @@
 
 from distutils.core import setup
 
-version = '0.1.0-dev'
+version = '0.1.0'
 description = 'Runtime inspection utilities for typing module.'
 long_description = '''
 Typing Inspect
@@ -37,7 +37,7 @@ setup(
     long_description=long_description,
     author='Ivan Levkivskyi',
     author_email='levkivskyi@gmail.com',
-    url='https://github.com/python/typing',
+    url='https://github.com/ilevkivskyi/typing_inspect',
     license='PSF',
     keywords='typing function annotations type hints hinting checking '
              'checker typehints typehinting typechecking inspect reflection',
