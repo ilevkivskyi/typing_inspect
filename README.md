@@ -14,8 +14,10 @@ T = TypeVar('T')
 class MyCollection(Generic[T]):
     content: T
 
-assert is_generic_type(Iterable[int])
 assert is_generic_type(Mapping)
+assert is_generic_type(Iterable[int])
+assert is_generic_type(MyCollection[T])
+
 assert not is_generic_type(int)
 assert not is_generic_type(Union[int, T])
 ```
