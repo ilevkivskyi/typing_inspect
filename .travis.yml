@@ -3,7 +3,7 @@ language: python
 python:
   - "nightly"
   - "3.7-dev"
-  - "3.6"
+  - "3.6-dev"
   - "3.5-dev"
   - "3.4"
   - "3.3"
