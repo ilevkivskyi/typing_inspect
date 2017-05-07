@@ -3,7 +3,7 @@
 # NOTE: This package must support Python 2.7 in addition to Python 3.x
 
 import sys
-from distutils.core import setup
+from setuptools import setup
 
 version = '0.1.1'
 description = 'Runtime inspection utilities for typing module.'
