@@ -40,7 +40,8 @@ setup(
     url='https://github.com/ilevkivskyi/typing_inspect',
     license='PSF',
     keywords='typing function annotations type hints hinting checking '
-             'checker typehints typehinting typechecking inspect reflection',
+             'checker typehints typehinting typechecking inspect '
+             'reflection introspection',
     py_modules=['typing_inspect'],
     classifiers=classifiers,
 )
