@@ -1,0 +1,4 @@
+include README.md
+include setup.py
+include typing_inspect.py
+include test_typing_inspect.py

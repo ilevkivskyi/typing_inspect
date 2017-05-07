@@ -18,7 +18,7 @@ classifiers = [
     'Development Status :: 3 - Alpha',
     'Environment :: Console',
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: Python Software Foundation License',
+    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 2',
     'Programming Language :: Python :: 2.7',
@@ -38,7 +38,7 @@ setup(
     author='Ivan Levkivskyi',
     author_email='levkivskyi@gmail.com',
     url='https://github.com/ilevkivskyi/typing_inspect',
-    license='PSF',
+    license='MIT',
     keywords='typing function annotations type hints hinting checking '
              'checker typehints typehinting typechecking inspect '
              'reflection introspection',
