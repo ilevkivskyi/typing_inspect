@@ -2,9 +2,10 @@
 
 # NOTE: This package must support Python 2.7 in addition to Python 3.x
 
+import sys
 from distutils.core import setup
 
-version = '0.1.0'
+version = '0.1.1'
 description = 'Runtime inspection utilities for typing module.'
 long_description = '''
 Typing Inspect
@@ -30,6 +31,10 @@ classifiers = [
     'Topic :: Software Development',
 ]
 
+install_requires = []
+if sys.version_info < (3, 5):
+    install_requires.append('typing >= 3.6.1')
+
 setup(
     name='typing_inspect',
     version=version,
@@ -44,4 +49,5 @@ setup(
              'reflection introspection',
     py_modules=['typing_inspect'],
     classifiers=classifiers,
+    install_requires=install_requires,
 )
