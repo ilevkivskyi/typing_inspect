@@ -9,8 +9,18 @@ Example usage::
 
 from typing import (
     Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
-    _gorg, _ClassVar, GenericMeta,
+    _ClassVar, GenericMeta,
 )
+
+
+def _gorg(cls):
+    """This function exists for compatibility with old typing versions."""
+    assert isinstance(cls, GenericMeta)
+    if hasattr(cls, '_gorg'):
+        return cls._gorg
+    while cls.__origin__ is not None:
+        cls = cls.__origin__
+    return cls
 
 
 def is_generic_type(tp):
