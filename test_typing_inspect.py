@@ -99,7 +99,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_parameters(Union[S_co, Tuple[T, T]][int, U]), (U,))
         self.assertEqual(get_parameters(Mapping[T, Tuple[S_co, T]]), (T, S_co))
 
-    @skipIf(NEW_TYPING)
+    @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_last_args(self):
         T = TypeVar('T')
         S = TypeVar('S')
@@ -111,7 +111,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
         self.assertEqual(get_last_args(Callable[[], int]), (int,))
 
-    @skipIf(NEW_TYPING)
+    @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_args(self):
         T = TypeVar('T')
         self.assertEqual(get_args(Union[int, Tuple[T, int]][str]),
