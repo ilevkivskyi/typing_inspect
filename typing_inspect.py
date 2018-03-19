@@ -176,7 +176,7 @@ def get_origin(tp):
     """
     if NEW_TYPING:
         if isinstance(tp, _GenericAlias):
-            return tp.__origin__
+            return tp.__origin__ if tp.__origin__ is not ClassVar else None
         if tp is Generic:
             return Generic
         return None
@@ -204,7 +204,7 @@ def get_parameters(tp):
         get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
     """
     if NEW_TYPING:
-        if isinstance(tp, _GenericAlias) or issubclass(tp, Generic) and tp is not Generic:
+        if isinstance(tp, _GenericAlias) or isinstance(tp, type) and issubclass(tp, Generic) and tp is not Generic:
             return tp.__parameters__
         return ()
     if (
@@ -281,7 +281,10 @@ def get_args(tp, evaluate=None):
         if not evaluate:
             raise ValueError('evaluate can only be True in Python 3.7')
         if isinstance(tp, _GenericAlias):
-            return tp.__args__
+            res = tp.__args__
+            if get_origin(tp) is collections.abc.Callable and res[0] is not Ellipsis:
+                res = (list(res[:-1]), res[-1])
+            return res
         return ()
     if is_classvar(tp):
         return (tp.__type__,)
