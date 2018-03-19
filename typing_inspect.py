@@ -76,7 +76,8 @@ def is_callable_type(tp):
         get_origin(tp) is Callable
     """
     if NEW_TYPING:
-        return tp is Callable or isinstance(tp, _GenericAlias) and tp.__origin__ is collections.abc.Callable
+        return (tp is Callable or isinstance(tp, _GenericAlias) and tp.__origin__ is collections.abc.Callable or
+                isinstance(tp, type) and issubclass(tp, Generic) and issubclass(tp, collections.abc.Callable))
     return type(tp) is CallableMeta
 
 
@@ -99,7 +100,8 @@ def is_tuple_type(tp):
         get_origin(tp) is Tuple
     """
     if NEW_TYPING:
-        return tp is Tuple or isinstance(tp, _GenericAlias) and tp.__origin__ is tuple
+        return (tp is Tuple or isinstance(tp, _GenericAlias) and tp.__origin__ is tuple or
+                isinstance(tp, type) and issubclass(tp, Generic) and issubclass(tp, tuple))
     return type(tp) is TupleMeta
 
 
