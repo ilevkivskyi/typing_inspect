@@ -85,7 +85,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
-        self.assertEqual(get_origin(List[Tuple[T, T]][int]), List)
+        self.assertEqual(get_origin(List[Tuple[T, T]][int]), list if NEW_TYPING else List)
 
     def test_parameters(self):
         T = TypeVar('T')
