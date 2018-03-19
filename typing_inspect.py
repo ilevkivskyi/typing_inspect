@@ -257,11 +257,13 @@ def _eval_args(args):
     return tuple(res)
 
 
-def get_args(tp, evaluate=False):
+def get_args(tp, evaluate=None):
     """Get type arguments with all substitutions performed. For unions,
     basic simplifications used by Union constructor are performed.
-    If `evaluate` is False (default), report result as nested tuple, this matches
-    the internal representation of types. If `evaluate` is True, then all
+    On versions prior to 3.7 if `evaluate` is False (default),
+    report result as nested tuple, this matches
+    the internal representation of types. If `evaluate` is True
+    (or if Python version is 3.7 or greater), then all
     type parameters are applied (this could be time and memory expensive).
     Examples::
 
@@ -276,6 +278,8 @@ def get_args(tp, evaluate=False):
         get_args(Callable[[], T][int], evaluate=True) == ([], int,)
     """
     if NEW_TYPING:
+        if evaluate=False:
+            raise ValueError('evaluate can only be True in Python 3.7')
         if isinstance(tp, _GenericAlias):
             return tp.__args__
         return ()
