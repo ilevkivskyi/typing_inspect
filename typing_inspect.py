@@ -51,7 +51,9 @@ def is_generic_type(tp):
         is_generic_type(Sequence[Union[str, bytes]]) == True
     """
     if NEW_TYPING:
-        return isinstance(tp, type) and issubclass(tp, Generic) or isinstance(tp, _GenericAlias)
+        return (isinstance(tp, type) and issubclass(tp, Generic) or
+                isinstance(tp, _GenericAlias) and tp.__origin__ not in (Union, tuple, ClassVar,
+                                                                        collections.abc.Callable))
     return (isinstance(tp, GenericMeta) and not
             isinstance(tp, (CallableMeta, TupleMeta)))
 
