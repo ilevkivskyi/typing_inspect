@@ -278,7 +278,7 @@ def get_args(tp, evaluate=None):
         get_args(Callable[[], T][int], evaluate=True) == ([], int,)
     """
     if NEW_TYPING:
-        if evaluate=False:
+        if not evaluate:
             raise ValueError('evaluate can only be True in Python 3.7')
         if isinstance(tp, _GenericAlias):
             return tp.__args__
