@@ -204,7 +204,7 @@ def get_parameters(tp):
         get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
     """
     if NEW_TYPING:
-        if isinstance(tp, _GenericAlias) or issubclass(tp, Generic):
+        if isinstance(tp, _GenericAlias) or issubclass(tp, Generic) and tp is not Generic:
             return tp.__parameters__
         return ()
     if (

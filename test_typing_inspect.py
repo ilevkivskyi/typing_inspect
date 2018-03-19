@@ -69,6 +69,7 @@ class IsUtilityTestCase(TestCase):
 
 class GetUtilityTestCase(TestCase):
 
+    @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_last_origin(self):
         T = TypeVar('T')
         self.assertEqual(get_last_origin(int), None)
@@ -121,6 +122,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(int), ())
 
     def test_args_evaluated(self):
+        T = TypeVar('T')
         self.assertEqual(get_args(Union[int, Tuple[T, int]][str], evaluate=True),
                          (int, Tuple[str, int]))
         self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
