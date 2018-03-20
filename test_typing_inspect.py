@@ -3,11 +3,14 @@ from typing_inspect import (
     is_typevar, is_classvar, get_origin, get_parameters, get_last_args, get_args,
     get_generic_type, get_generic_bases, get_last_origin,
 )
-from unittest import TestCase, main
+from unittest import TestCase, main, skipIf
 from typing import (
     Union, ClassVar, Callable, Optional, TypeVar, Sequence, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
+
+import sys
+NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
 
 class IsUtilityTestCase(TestCase):
@@ -66,6 +69,7 @@ class IsUtilityTestCase(TestCase):
 
 class GetUtilityTestCase(TestCase):
 
+    @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_last_origin(self):
         T = TypeVar('T')
         self.assertEqual(get_last_origin(int), None)
@@ -81,7 +85,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
-        self.assertEqual(get_origin(List[Tuple[T, T]][int]), List)
+        self.assertEqual(get_origin(List[Tuple[T, T]][int]), list if NEW_TYPING else List)
 
     def test_parameters(self):
         T = TypeVar('T')
@@ -96,6 +100,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_parameters(Union[S_co, Tuple[T, T]][int, U]), (U,))
         self.assertEqual(get_parameters(Mapping[T, Tuple[S_co, T]]), (T, S_co))
 
+    @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_last_args(self):
         T = TypeVar('T')
         S = TypeVar('S')
@@ -107,6 +112,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
         self.assertEqual(get_last_args(Callable[[], int]), (int,))
 
+    @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_args(self):
         T = TypeVar('T')
         self.assertEqual(get_args(Union[int, Tuple[T, int]][str]),
@@ -114,6 +120,9 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Union[int, Union[T, int], str][int]),
                          (int, str))
         self.assertEqual(get_args(int), ())
+
+    def test_args_evaluated(self):
+        T = TypeVar('T')
         self.assertEqual(get_args(Union[int, Tuple[T, int]][str], evaluate=True),
                          (int, Tuple[str, int]))
         self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
