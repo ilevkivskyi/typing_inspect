@@ -14,7 +14,9 @@ if NEW_TYPING:
 
 
 if NEW_TYPING:
-    from typing import Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
+    from typing import (
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
+    )
 else:
     from typing import (
         Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
@@ -52,8 +54,8 @@ def is_generic_type(tp):
     """
     if NEW_TYPING:
         return (isinstance(tp, type) and issubclass(tp, Generic) or
-                isinstance(tp, _GenericAlias) and tp.__origin__ not in (Union, tuple, ClassVar,
-                                                                        collections.abc.Callable))
+                isinstance(tp, _GenericAlias) and
+                tp.__origin__ not in (Union, tuple, ClassVar, collections.abc.Callable))
     return (isinstance(tp, GenericMeta) and not
             isinstance(tp, (CallableMeta, TupleMeta)))
 
@@ -75,11 +77,13 @@ def is_callable_type(tp):
     For more general tests use callable(), for more precise test
     (excluding subclasses) use::
 
-        get_origin(tp) is Callable
+        get_origin(tp) is collections.abc.Callable  # Callable prior to Python 3.7
     """
     if NEW_TYPING:
-        return (tp is Callable or isinstance(tp, _GenericAlias) and tp.__origin__ is collections.abc.Callable or
-                isinstance(tp, type) and issubclass(tp, Generic) and issubclass(tp, collections.abc.Callable))
+        return (tp is Callable or isinstance(tp, _GenericAlias) and
+                tp.__origin__ is collections.abc.Callable or
+                isinstance(tp, type) and issubclass(tp, Generic) and
+                issubclass(tp, collections.abc.Callable))
     return type(tp) is CallableMeta
 
 
@@ -99,11 +103,13 @@ def is_tuple_type(tp):
     For more general tests use issubclass(..., tuple), for more precise test
     (excluding subclasses) use::
 
-        get_origin(tp) is Tuple
+        get_origin(tp) is tuple  # Tuple prior to Python 3.7
     """
     if NEW_TYPING:
-        return (tp is Tuple or isinstance(tp, _GenericAlias) and tp.__origin__ is tuple or
-                isinstance(tp, type) and issubclass(tp, Generic) and issubclass(tp, tuple))
+        return (tp is Tuple or isinstance(tp, _GenericAlias) and
+                tp.__origin__ is tuple or
+                isinstance(tp, type) and issubclass(tp, Generic) and
+                issubclass(tp, tuple))
     return type(tp) is TupleMeta
 
 
@@ -116,7 +122,8 @@ def is_union_type(tp):
         is_union_type(Union[T, int]) == True
     """
     if NEW_TYPING:
-        return tp is Union or isinstance(tp, _GenericAlias) and tp.__origin__ is Union
+        return (tp is Union or
+                isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
     return type(tp) is _Union
 
 
@@ -140,7 +147,8 @@ def is_classvar(tp):
         is_classvar(ClassVar[List[T]]) == True
     """
     if NEW_TYPING:
-        return tp is ClassVar or isinstance(tp, _GenericAlias) and tp.__origin__ is ClassVar
+        return (tp is ClassVar or
+                isinstance(tp, _GenericAlias) and tp.__origin__ is ClassVar)
     return type(tp) is _ClassVar
 
 
@@ -157,7 +165,8 @@ def get_last_origin(tp):
         get_last_origin(List) == List
     """
     if NEW_TYPING:
-        raise ValueError('This function is only supported in Python 3.6, use get_origin instead')
+        raise ValueError('This function is only supported in Python 3.6,'
+                         ' use get_origin instead')
     sentinel = object()
     origin = getattr(tp, '__origin__', sentinel)
     if origin is sentinel:
@@ -176,7 +185,7 @@ def get_origin(tp):
         get_origin(Generic) == Generic
         get_origin(Generic[T]) == Generic
         get_origin(Union[T, int]) == Union
-        get_origin(List[Tuple[T, T]][int]) == List
+        get_origin(List[Tuple[T, T]][int]) == list  # List prior to Python 3.7
     """
     if NEW_TYPING:
         if isinstance(tp, _GenericAlias):
@@ -208,7 +217,9 @@ def get_parameters(tp):
         get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
     """
     if NEW_TYPING:
-        if isinstance(tp, _GenericAlias) or isinstance(tp, type) and issubclass(tp, Generic) and tp is not Generic:
+        if (isinstance(tp, _GenericAlias) or
+            isinstance(tp, type) and issubclass(tp, Generic) and
+            tp is not Generic):
             return tp.__parameters__
         return ()
     if (
@@ -232,7 +243,8 @@ def get_last_args(tp):
         get_last_args(Callable[[], int]) == (int,)
     """
     if NEW_TYPING:
-        raise ValueError('This function is only supported in Python 3.6, use get_args instead')
+        raise ValueError('This function is only supported in Python 3.6,'
+                         ' use get_args instead')
     if is_classvar(tp):
         return (tp.__type__,) if tp.__type__ is not None else ()
     if (
