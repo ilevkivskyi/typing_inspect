@@ -24,6 +24,9 @@ else:
     )
 
 
+from mypy_extensions import _TypedDictMeta
+
+
 def _gorg(cls):
     """This function exists for compatibility with old typing versions."""
     assert isinstance(cls, GenericMeta)
@@ -346,3 +349,23 @@ def get_generic_bases(tp):
     """
 
     return getattr(tp, '__orig_bases__', ())
+
+
+def typed_dict_keys(td):
+    """If td is a TypedDict class, return a dictionary mapping the typed keys to types.
+    Otherwise, return None. Examples::
+
+        class TD(TypedDict):
+            x: int
+            y: int
+        class Other(dict):
+            x: int
+            y: int
+
+        typed_dict_keys(TD) == {'x': int, 'y': int}
+        typed_dict_keys(dict) == None
+        typed_dict_keys(Other) == None
+    """
+    if isinstance(td, _TypedDictMeta):
+        return td.__annotations__.copy()
+    return None
