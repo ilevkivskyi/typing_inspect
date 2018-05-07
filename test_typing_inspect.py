@@ -1,7 +1,7 @@
 from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
     is_typevar, is_classvar, get_origin, get_parameters, get_last_args, get_args,
-    get_generic_type, get_generic_bases, get_last_origin,
+    get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
 )
 from unittest import TestCase, main, skipIf
 from typing import (
@@ -11,6 +11,8 @@ from typing import (
 
 import sys
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
+
+from mypy_extensions import TypedDict
 
 
 class IsUtilityTestCase(TestCase):
@@ -142,6 +144,18 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_generic_bases(MyClass),
                          (List[int], Mapping[str, List[int]]))
         self.assertEqual(get_generic_bases(int), ())
+
+    def test_typed_dict(self):
+        class TD(TypedDict):
+            x: int
+            y: int
+        class Other(dict):
+            x: int
+            y: int
+
+        self.assertEqual(typed_dict_keys(TD), {'x': int, 'y': int})
+        self.assertIs(typed_dict_keys(dict), None)
+        self.assertIs(typed_dict_keys(Other), None)
 
 
 if __name__ == '__main__':
