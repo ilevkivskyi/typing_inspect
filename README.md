@@ -71,3 +71,5 @@ Currently provided functions (see functions docstrings for examples of usage):
   Get the generic type of ``obj`` if possible, or its runtime class otherwise.
 * ``get_generic_bases(tp)``:
   Get generic base types of ``tp`` or empty tuple if not possible.
+* ``typed_dict_keys(td)``:
+  Get ``TypedDict`` keys and their types, or None if ``td`` is not a typed dict.
