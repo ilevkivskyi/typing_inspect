@@ -5,7 +5,7 @@
 import sys
 from setuptools import setup
 
-version = '0.3.0'
+version = '0.3.1'
 description = 'Runtime inspection utilities for typing module.'
 long_description = '''
 Typing Inspect
@@ -31,7 +31,7 @@ classifiers = [
     'Topic :: Software Development',
 ]
 
-install_requires = []
+install_requires = ['mypy_extensions >= 0.3.0']
 if sys.version_info < (3, 5):
     install_requires.append('typing >= 3.6.1')
 
