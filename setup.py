@@ -31,9 +31,10 @@ classifiers = [
     'Topic :: Software Development',
 ]
 
-install_requires = ['mypy_extensions >= 0.3.0']
-if sys.version_info < (3, 5):
-    install_requires.append('typing >= 3.6.1')
+install_requires = [
+    'mypy_extensions >= 0.3.0',
+    'typing >= 3.6.1;python_version<"3.5"'
+]
 
 setup(
     name='typing_inspect',
