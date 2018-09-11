@@ -1,5 +1,5 @@
 from typing_inspect import (
-    is_generic_type, is_callable_type, is_tuple_type, is_union_type,
+    is_generic_type, is_callable_type, is_tuple_type, is_union_type, is_optional_type,
     is_typevar, is_classvar, get_origin, get_parameters, get_last_args, get_args,
     get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
 )
@@ -67,6 +67,28 @@ class IsUtilityTestCase(TestCase):
         samples = [Union, Union[T, int], Union[int, Union[T, S]]]
         nonsamples = [int, Union[int, int], [], Iterable[Any]]
         self.sample_test(is_union_type, samples, nonsamples)
+
+    def test_optional_type(self):
+        T = TypeVar('T')
+        samples = [type(None),                # none type
+                   Optional[int],             # direct union to none type 1
+                   Optional[T],               # direct union to none type 2
+                   Optional[T][int],          # direct union to none type 3
+                   Union[int, type(None)],    # direct union to none type 4
+                   Union[str, T][type(None)]  # direct union to none type 5
+                   ]
+        nonsamples = [int, Union[int, int], [], Iterable[Any], T, Union[T, str][int]]
+        # unfortunately current definition sets these ones as non samples too (those with nesting only in python <= 3.5)
+        S1 = TypeVar('S', bound=Optional[int])
+        S2 = TypeVar('S', type(None), str)
+        S3 = TypeVar('S', Optional[int], str)
+        S4 = TypeVar('S', bound=Union[str, Optional[int]])
+        nonsamples += [Union[str, Optional[int]],      # nested Union 1
+                       Union[T, str][Optional[int]],   # nested Union 2
+                       S1, S2, S3,                     # typevar bound or constrained to optional
+                       Union[S1, int], S4              # combinations of the above
+                       ]
+        self.sample_test(is_optional_type, samples, nonsamples)
 
     def test_typevar(self):
         T = TypeVar('T')

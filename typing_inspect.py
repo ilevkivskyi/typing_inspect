@@ -116,6 +116,24 @@ def is_tuple_type(tp):
     return type(tp) is TupleMeta
 
 
+def is_optional_type(tp):
+    """Returns `True` if the type is `type(None)`, or is a direct `Union` to `type(None)`, such as `Optional[T]`.
+
+    WARNING: this method might return a misleading `False` if
+     - `tp` is a `TypeVar` bound, or constrained to, an optional type
+     - `tp` is a `Union` to a `TypeVar` bound or constrained to an optional type,
+     - `tp` refers to a *nested* `Union` containing an optional type or one of the above.
+    """
+
+    if tp is type(None):
+        return True
+    elif is_union_type(tp):
+        # TODO should we force evaluate to be True here or set it as a parameter?
+        return any(is_optional_type(tt) for tt in get_args(tp, evaluate=True))
+    else:
+        return False
+
+
 def is_union_type(tp):
     """Test if the type is a union type. Examples::
 
@@ -130,6 +148,52 @@ def is_union_type(tp):
     return type(tp) is _Union
 
 
+# def is_optional_type(tp):
+#     """Returns `True` if the provided type is the none type, or a direct union to the none type.
+#
+#     Warning: this method will return a misleading `False` if `tp` is a `TypeVar` bound or constrained to an optional
+#     type, or if `tp` is a `Union` so such a `TypeVar`, or if there are nested `Union`.
+#     """
+#
+#     if tp is type(None):
+#         return True
+#     elif is_union_type(tp):
+#         return any(is_optional_type(tt) for tt in flatten_union_and_typevar(tp))
+#     else:
+#         return False
+
+
+# def flatten_union_and_typevar(typ):  # -> Generator[Any, ...]:
+#     """ Returns a generator of all types actually
+#     If typ is a TypeVar,
+#      * if the typevar is bound, return flatten_union_and_typevar(bound)
+#      * if the typevar has constraints, return a tuple containing all the types listed in the constraints (with
+#      appropriate recursive call to flatten_union_and_typevar for each of them)
+#      * otherwise return (object, )
+#
+#     If typ is a Union, return a tuple containing all the types listed in the union (with
+#      appropriate recursive call to resolve_union_and_typevar for each of them)
+#
+#     Otherwise return (typ, )
+#
+#     :param typ:
+#     :return:
+#     """
+#     if is_typevar(typ):
+#         if hasattr(typ, '__bound__') and typ.__bound__ is not None:
+#             return resolve_union_and_typevar(typ.__bound__)
+#         elif hasattr(typ, '__constraints__') and typ.__constraints__ is not None:
+#             return tuple(typpp for c in typ.__constraints__ for typpp in resolve_union_and_typevar(c))
+#         else:
+#             return object,
+#     elif is_union_type(typ):
+#         # do not use typ.__args__, it may be wrong
+#         # the solution below works even in typevar+config cases such as u = Union[T, str][Optional[int]]
+#         return get_args(typ, evaluate=True)
+#     else:
+#         return typ,
+
+
 def is_typevar(tp):
     """Test if the type represents a type variable. Examples::
 
@@ -139,6 +203,32 @@ def is_typevar(tp):
     """
 
     return type(tp) is TypeVar
+
+
+def get_bound(tp):
+    """Returns the type bound to a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+
+        get_bound(int) == None
+        get_bound(T) == None
+    """
+
+    if is_typevar(tp):
+        return getattr(tp, '__bound__', None)
+    else:
+        raise TypeError("type is not a `TypeVar`: " + str(tp))
+
+
+def get_constraints(tp):
+    """Returns the constraints of a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+
+    :param tp:
+    :return:
+    """
+
+    if is_typevar(tp):
+        return getattr(tp, '__constraints__', None)
+    else:
+        raise TypeError("type is not a `TypeVar`: " + str(tp))
 
 
 def is_classvar(tp):
