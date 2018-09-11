@@ -1,7 +1,8 @@
 from typing_inspect import (
-    is_generic_type, is_callable_type, is_tuple_type, is_union_type, is_optional_type,
-    is_typevar, is_classvar, get_origin, get_parameters, get_last_args, get_args,
-    get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
+    is_generic_type, is_callable_type, is_tuple_type, is_union_type,
+    is_optional_type, is_typevar, is_classvar, get_origin, get_parameters,
+    get_last_args, get_args, get_bound, get_constraints, get_generic_type,
+    get_generic_bases, get_last_origin, typed_dict_keys,
 )
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
@@ -165,6 +166,18 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
                          (int, Tuple[Optional[int], Optional[int]]))
         self.assertEqual(get_args(Callable[[], T][int], evaluate=True), ([], int,))
+
+    def test_bound(self):
+        T = TypeVar('T')
+        TB = TypeVar('TB', bound=int)
+        self.assertEqual(get_bound(T), None)
+        self.assertEqual(get_bound(TB), int)
+
+    def test_constraints(self):
+        T = TypeVar('T')
+        TC = TypeVar('TC', int, str)
+        self.assertEqual(get_constraints(T), ())
+        self.assertEqual(get_constraints(TC), (int, str))
 
     def test_generic_type(self):
         T = TypeVar('T')

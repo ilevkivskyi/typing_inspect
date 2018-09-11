@@ -205,32 +205,6 @@ def is_typevar(tp):
     return type(tp) is TypeVar
 
 
-def get_bound(tp):
-    """Returns the type bound to a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
-
-        get_bound(int) == None
-        get_bound(T) == None
-    """
-
-    if is_typevar(tp):
-        return getattr(tp, '__bound__', None)
-    else:
-        raise TypeError("type is not a `TypeVar`: " + str(tp))
-
-
-def get_constraints(tp):
-    """Returns the constraints of a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
-
-    :param tp:
-    :return:
-    """
-
-    if is_typevar(tp):
-        return getattr(tp, '__constraints__', None)
-    else:
-        raise TypeError("type is not a `TypeVar`: " + str(tp))
-
-
 def is_classvar(tp):
     """Test if the type represents a class variable. Examples::
 
@@ -410,6 +384,36 @@ def get_args(tp, evaluate=None):
                 res = (list(res[:-1]), res[-1])
             return res
     return ()
+
+
+def get_bound(tp):
+    """Returns the type bound to a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+
+    Examples::
+
+        get_bound(TypeVar('T')) == None
+        get_bound(TypeVar('T', bound=int)) == int
+    """
+
+    if is_typevar(tp):
+        return getattr(tp, '__bound__', None)
+    else:
+        raise TypeError("type is not a `TypeVar`: " + str(tp))
+
+
+def get_constraints(tp):
+    """Returns the constraints of a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+
+    Examples::
+
+        get_constraints(TypeVar('T')) == ()
+        get_constraints(TypeVar('T', int, str)) == (int, str)
+    """
+
+    if is_typevar(tp):
+        return getattr(tp, '__constraints__', ())
+    else:
+        raise TypeError("type is not a `TypeVar`: " + str(tp))
 
 
 def get_generic_type(obj):
