@@ -79,10 +79,10 @@ class IsUtilityTestCase(TestCase):
                    ]
         nonsamples = [int, Union[int, int], [], Iterable[Any], T, Union[T, str][int]]
         # unfortunately current definition sets these ones as non samples too (those with nesting only in python <= 3.5)
-        S1 = TypeVar('S', bound=Optional[int])
-        S2 = TypeVar('S', type(None), str)
-        S3 = TypeVar('S', Optional[int], str)
-        S4 = TypeVar('S', bound=Union[str, Optional[int]])
+        S1 = TypeVar('S1', bound=Optional[int])
+        S2 = TypeVar('S2', type(None), str)
+        S3 = TypeVar('S3', Optional[int], str)
+        S4 = TypeVar('S4', bound=Union[str, Optional[int]])
         nonsamples += [Union[str, Optional[int]],      # nested Union 1
                        Union[T, str][Optional[int]],   # nested Union 2
                        S1, S2, S3,                     # typevar bound or constrained to optional
