@@ -31,10 +31,11 @@ if PY36:
 
 class IsUtilityTestCase(TestCase):
     def sample_test(self, fun, samples, nonsamples):
+        msg = "Error asserting that %s(%s) is %s"
         for s in samples:
-            self.assertTrue(fun(s))
+            self.assertTrue(fun(s), msg=msg % (fun.__name__, str(s), 'True'))
         for s in nonsamples:
-            self.assertFalse(fun(s))
+            self.assertFalse(fun(s), msg=msg % (fun.__name__, str(s), 'False'))
 
     def test_generic(self):
         T = TypeVar('T')
