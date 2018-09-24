@@ -79,14 +79,17 @@ class IsUtilityTestCase(TestCase):
                    Union[int, type(None)],    # direct union to none type 4
                    Union[str, T][type(None)]  # direct union to none type 5
                    ]
+        # nested unions are supported
+        samples += [Union[str, Optional[int]],      # nested Union 1
+                    Union[T, str][Optional[int]],   # nested Union 2
+                    ]
         nonsamples = [int, Union[int, int], [], Iterable[Any], T, Union[T, str][int]]
-        # unfortunately current definition sets these ones as non samples too (those with nesting only in python <= 3.5)
+        # unfortunately current definition sets these ones as non samples too
         S1 = TypeVar('S1', bound=Optional[int])
         S2 = TypeVar('S2', type(None), str)
         S3 = TypeVar('S3', Optional[int], str)
         S4 = TypeVar('S4', bound=Union[str, Optional[int]])
-        nonsamples += [Union[str, Optional[int]],      # nested Union 1
-                       Union[T, str][Optional[int]],   # nested Union 2
+        nonsamples += [
                        S1, S2, S3,                     # typevar bound or constrained to optional
                        Union[S1, int], S4              # combinations of the above
                        ]
