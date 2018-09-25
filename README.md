@@ -42,6 +42,8 @@ Currently provided functions (see functions docstrings for examples of usage):
   non-generic classes.
 * ``is_union_type(tp)``:
   Test if ``tp`` is a union type.
+* ``is_optional_type(tp)``:
+  Test if ``tp`` is an optional type (either ``type(None)`` or a direct union to it such as in ``Optional[int]``). Nesting and ``TypeVar``s are not unfolded/inspected in this process.
 * ``is_typevar(tp)``:
   Test if ``tp`` represents a type variable.
 * ``is_classvar(tp)``:

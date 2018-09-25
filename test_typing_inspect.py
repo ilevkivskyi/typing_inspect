@@ -1,7 +1,8 @@
 from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
-    is_typevar, is_classvar, get_origin, get_parameters, get_last_args, get_args,
-    get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
+    is_optional_type, is_typevar, is_classvar, get_origin, get_parameters,
+    get_last_args, get_args, get_bound, get_constraints, get_generic_type,
+    get_generic_bases, get_last_origin, typed_dict_keys,
 )
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
@@ -30,10 +31,11 @@ if PY36:
 
 class IsUtilityTestCase(TestCase):
     def sample_test(self, fun, samples, nonsamples):
+        msg = "Error asserting that %s(%s) is %s"
         for s in samples:
-            self.assertTrue(fun(s))
+            self.assertTrue(fun(s), msg=msg % (fun.__name__, str(s), 'True'))
         for s in nonsamples:
-            self.assertFalse(fun(s))
+            self.assertFalse(fun(s), msg=msg % (fun.__name__, str(s), 'False'))
 
     def test_generic(self):
         T = TypeVar('T')
@@ -67,6 +69,31 @@ class IsUtilityTestCase(TestCase):
         samples = [Union, Union[T, int], Union[int, Union[T, S]]]
         nonsamples = [int, Union[int, int], [], Iterable[Any]]
         self.sample_test(is_union_type, samples, nonsamples)
+
+    def test_optional_type(self):
+        T = TypeVar('T')
+        samples = [type(None),                # none type
+                   Optional[int],             # direct union to none type 1
+                   Optional[T],               # direct union to none type 2
+                   Optional[T][int],          # direct union to none type 3
+                   Union[int, type(None)],    # direct union to none type 4
+                   Union[str, T][type(None)]  # direct union to none type 5
+                   ]
+        # nested unions are supported
+        samples += [Union[str, Optional[int]],      # nested Union 1
+                    Union[T, str][Optional[int]],   # nested Union 2
+                    ]
+        nonsamples = [int, Union[int, int], [], Iterable[Any], T, Union[T, str][int]]
+        # unfortunately current definition sets these ones as non samples too
+        S1 = TypeVar('S1', bound=Optional[int])
+        S2 = TypeVar('S2', type(None), str)
+        S3 = TypeVar('S3', Optional[int], str)
+        S4 = TypeVar('S4', bound=Union[str, Optional[int]])
+        nonsamples += [
+                       S1, S2, S3,                     # typevar bound or constrained to optional
+                       Union[S1, int], S4              # combinations of the above
+                       ]
+        self.sample_test(is_optional_type, samples, nonsamples)
 
     def test_typevar(self):
         T = TypeVar('T')
@@ -143,6 +170,18 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
                          (int, Tuple[Optional[int], Optional[int]]))
         self.assertEqual(get_args(Callable[[], T][int], evaluate=True), ([], int,))
+
+    def test_bound(self):
+        T = TypeVar('T')
+        TB = TypeVar('TB', bound=int)
+        self.assertEqual(get_bound(T), None)
+        self.assertEqual(get_bound(TB), int)
+
+    def test_constraints(self):
+        T = TypeVar('T')
+        TC = TypeVar('TC', int, str)
+        self.assertEqual(get_constraints(T), ())
+        self.assertEqual(get_constraints(TC), (int, str))
 
     def test_generic_type(self):
         T = TypeVar('T')

@@ -116,6 +116,27 @@ def is_tuple_type(tp):
     return type(tp) is TupleMeta
 
 
+def is_optional_type(tp):
+    """Returns `True` if the type is `type(None)`, or is a direct `Union` to `type(None)`, such as `Optional[T]`.
+
+    NOTE: this method inspects nested `Union` arguments but not `TypeVar` definitions (`bound`/`constraint`). So it
+    will return `False` if
+     - `tp` is a `TypeVar` bound, or constrained to, an optional type
+     - `tp` is a `Union` to a `TypeVar` bound or constrained to an optional type,
+     - `tp` refers to a *nested* `Union` containing an optional type or one of the above.
+
+    Users wishing to check for optionality in types relying on type variables might wish to use this method in
+    combination with `get_constraints` and `get_bound`
+    """
+
+    if tp is type(None):
+        return True
+    elif is_union_type(tp):
+        return any(is_optional_type(tt) for tt in get_args(tp, evaluate=True))
+    else:
+        return False
+
+
 def is_union_type(tp):
     """Test if the type is a union type. Examples::
 
@@ -320,6 +341,36 @@ def get_args(tp, evaluate=None):
                 res = (list(res[:-1]), res[-1])
             return res
     return ()
+
+
+def get_bound(tp):
+    """Returns the type bound to a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+
+    Examples::
+
+        get_bound(TypeVar('T')) == None
+        get_bound(TypeVar('T', bound=int)) == int
+    """
+
+    if is_typevar(tp):
+        return getattr(tp, '__bound__', None)
+    else:
+        raise TypeError("type is not a `TypeVar`: " + str(tp))
+
+
+def get_constraints(tp):
+    """Returns the constraints of a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+
+    Examples::
+
+        get_constraints(TypeVar('T')) == ()
+        get_constraints(TypeVar('T', int, str)) == (int, str)
+    """
+
+    if is_typevar(tp):
+        return getattr(tp, '__constraints__', ())
+    else:
+        raise TypeError("type is not a `TypeVar`: " + str(tp))
 
 
 def get_generic_type(obj):
