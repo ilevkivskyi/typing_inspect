@@ -5,7 +5,7 @@
 import sys
 from setuptools import setup
 
-version = '0.3.1'
+version = '0.4.0'
 description = 'Runtime inspection utilities for typing module.'
 long_description = '''
 Typing Inspect
@@ -28,6 +28,7 @@ classifiers = [
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Topic :: Software Development',
 ]
 
