@@ -170,6 +170,8 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
                          (int, Tuple[Optional[int], Optional[int]]))
         self.assertEqual(get_args(Callable[[], T][int], evaluate=True), ([], int,))
+        self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
+                         (int, Callable[[Tuple[T, ...]], str]))
 
     def test_bound(self):
         T = TypeVar('T')
