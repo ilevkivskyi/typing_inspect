@@ -173,6 +173,10 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
                          (int, Callable[[Tuple[T, ...]], str]))
 
+        # ClassVar special-casing
+        self.assertEqual(get_args(ClassVar, evaluate=True), ())
+        self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
+
     def test_bound(self):
         T = TypeVar('T')
         TB = TypeVar('TB', bound=int)

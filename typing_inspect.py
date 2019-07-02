@@ -328,7 +328,7 @@ def get_args(tp, evaluate=None):
             return res
         return ()
     if is_classvar(tp):
-        return (tp.__type__,)
+        return (tp.__type__,) if tp.__type__ is not None else ()
     if (
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
