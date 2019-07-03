@@ -1,0 +1,8 @@
+[flake8]
+max-line-length = 90
+ignore =
+  B3,
+  DW12,
+  W504
+exclude =
+  test_typing_inspect.py

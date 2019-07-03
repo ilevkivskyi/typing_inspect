@@ -13,5 +13,5 @@ install:
 
 script:
   - py.test
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8 --config=.flake8 typing_inspect.py; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8 --config=.flake8-tests test_typing_inspect.py; fi
