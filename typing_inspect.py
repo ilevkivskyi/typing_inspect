@@ -8,23 +8,26 @@ Example usage::
 # NOTE: This module must support Python 2.7 in addition to Python 3.x
 
 import sys
+from mypy_extensions import _TypedDictMeta
+
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
     import collections.abc
-
 
 if NEW_TYPING:
     from typing import (
         Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
     )
+    from typing_extensions import Literal
 else:
     from typing import (
         Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
         _ClassVar, GenericMeta,
     )
-
-
-from mypy_extensions import _TypedDictMeta
+    try:  # python 3.6
+        from typing_extensions import _Literal
+    except ImportError:  # python 2.7
+        from typing import _Literal
 
 
 def _gorg(cls):
@@ -117,19 +120,19 @@ def is_tuple_type(tp):
 
 
 def is_optional_type(tp):
-    """Returns `True` if the type is `type(None)`, or is a direct `Union` to `type(None)`, such as `Optional[T]`.
+    """Test if the type is type(None), or is a direct union with it, such as Optional[T].
 
-    NOTE: this method inspects nested `Union` arguments but not `TypeVar` definitions (`bound`/`constraint`). So it
-    will return `False` if
+    NOTE: this method inspects nested `Union` arguments but not `TypeVar` definition
+    bounds and constraints. So it will return `False` if
      - `tp` is a `TypeVar` bound, or constrained to, an optional type
      - `tp` is a `Union` to a `TypeVar` bound or constrained to an optional type,
      - `tp` refers to a *nested* `Union` containing an optional type or one of the above.
 
-    Users wishing to check for optionality in types relying on type variables might wish to use this method in
-    combination with `get_constraints` and `get_bound`
+    Users wishing to check for optionality in types relying on type variables might wish
+    to use this method in combination with `get_constraints` and `get_bound`
     """
 
-    if tp is type(None):
+    if tp is type(None):  # noqa
         return True
     elif is_union_type(tp):
         return any(is_optional_type(tt) for tt in get_args(tp, evaluate=True))
@@ -149,6 +152,13 @@ def is_union_type(tp):
         return (tp is Union or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
     return type(tp) is _Union
+
+
+def is_literal_type(tp):
+    if NEW_TYPING:
+        return (tp is Literal or
+                isinstance(tp, _GenericAlias) and tp.__origin__ is Literal)
+    return type(tp) is _Literal
 
 
 def is_typevar(tp):
@@ -242,8 +252,8 @@ def get_parameters(tp):
     """
     if NEW_TYPING:
         if (isinstance(tp, _GenericAlias) or
-            isinstance(tp, type) and issubclass(tp, Generic) and
-            tp is not Generic):
+                isinstance(tp, type) and issubclass(tp, Generic) and
+                tp is not Generic):
             return tp.__parameters__
         return ()
     if (
@@ -329,6 +339,8 @@ def get_args(tp, evaluate=None):
         return ()
     if is_classvar(tp):
         return (tp.__type__,) if tp.__type__ is not None else ()
+    if is_literal_type(tp):
+        return tp.__values__ or ()
     if (
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
@@ -345,8 +357,9 @@ def get_args(tp, evaluate=None):
 
 
 def get_bound(tp):
-    """Returns the type bound to a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+    """Return the bound to a `TypeVar` if any.
 
+    It the type is not a `TypeVar`, a `TypeError` is raised.
     Examples::
 
         get_bound(TypeVar('T')) == None
@@ -360,8 +373,9 @@ def get_bound(tp):
 
 
 def get_constraints(tp):
-    """Returns the constraints of a `TypeVar` if any. It the type is not a `TypeVar`, a `TypeError` is raised
+    """Returns the constraints of a `TypeVar` if any.
 
+    It the type is not a `TypeVar`, a `TypeError` is raised
     Examples::
 
         get_constraints(TypeVar('T')) == ()

@@ -1,12 +1,11 @@
 sudo: false
 language: python
 python:
-  - "nightly"
-  - "3.7-dev"
-  - "3.6-dev"
-  - "3.5-dev"
+  - "3.8-dev"
+  - "3.7"
+  - "3.6"
+  - "3.5"
   - "3.4"
-  - "3.3"
   - "2.7"
 
 install:
@@ -14,5 +13,5 @@ install:
 
 script:
   - py.test
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8 --config=.flake8 typing_inspect.py; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then flake8 --config=.flake8-tests test_typing_inspect.py; fi
