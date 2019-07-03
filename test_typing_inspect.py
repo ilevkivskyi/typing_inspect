@@ -111,7 +111,6 @@ class IsUtilityTestCase(TestCase):
         ]
         self.sample_test(is_literal_type, samples, nonsamples)
 
-
     def test_typevar(self):
         T = TypeVar('T')
         S_co = TypeVar('S_co', covariant=True)
