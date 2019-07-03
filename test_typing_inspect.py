@@ -11,9 +11,9 @@ from typing import (
 )
 
 import sys
-NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
-
 from mypy_extensions import TypedDict
+
+NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
 PY36_TESTS = """
 class TD(TypedDict):
@@ -27,6 +27,8 @@ class Other(dict):
 PY36 = sys.version_info[:3] >= (3, 6, 0)
 if PY36:
     exec(PY36_TESTS)
+else:
+    TD = Other = object  # for linters
 
 
 class IsUtilityTestCase(TestCase):
@@ -89,8 +91,7 @@ class IsUtilityTestCase(TestCase):
         S2 = TypeVar('S2', type(None), str)
         S3 = TypeVar('S3', Optional[int], str)
         S4 = TypeVar('S4', bound=Union[str, Optional[int]])
-        nonsamples += [
-                       S1, S2, S3,                     # typevar bound or constrained to optional
+        nonsamples += [S1, S2, S3,                     # typevar bound or constrained to optional
                        Union[S1, int], S4              # combinations of the above
                        ]
         self.sample_test(is_optional_type, samples, nonsamples)
