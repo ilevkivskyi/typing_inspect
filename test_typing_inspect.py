@@ -1,7 +1,7 @@
 from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
-    is_optional_type, is_typevar, is_classvar, get_origin, get_parameters,
-    get_last_args, get_args, get_bound, get_constraints, get_generic_type,
+    is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
+    get_parameters, get_last_args, get_args, get_bound, get_constraints, get_generic_type,
     get_generic_bases, get_last_origin, typed_dict_keys,
 )
 from unittest import TestCase, main, skipIf, skipUnless
@@ -12,6 +12,7 @@ from typing import (
 
 import sys
 from mypy_extensions import TypedDict
+from typing_extensions import Literal
 
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
@@ -96,6 +97,21 @@ class IsUtilityTestCase(TestCase):
                        ]
         self.sample_test(is_optional_type, samples, nonsamples)
 
+    def test_literal_type(self):
+        samples = [
+            Literal,
+            Literal["v"],
+            Literal[1, 2, 3],
+        ]
+        nonsamples = [
+            "v",
+            (1, 2, 3),
+            int,
+            str,
+            Union["u", "v"],
+        ]
+        self.sample_test(is_literal_type, samples, nonsamples)
+
     def test_typevar(self):
         T = TypeVar('T')
         S_co = TypeVar('S_co', covariant=True)
@@ -173,6 +189,11 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Callable[[], T][int], evaluate=True), ([], int,))
         self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
                          (int, Callable[[Tuple[T, ...]], str]))
+
+        # Literal special-casing
+        self.assertEqual(get_args(Literal, evaluate=True), ())
+        self.assertEqual(get_args(Literal["value"], evaluate=True), ("value",))
+        self.assertEqual(get_args(Literal[1, 2, 3], evaluate=True), (1, 2, 3))
 
     def test_bound(self):
         T = TypeVar('T')

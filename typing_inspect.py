@@ -18,11 +18,16 @@ if NEW_TYPING:
     from typing import (
         Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
     )
+    from typing_extensions import Literal
 else:
     from typing import (
         Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
         _ClassVar, GenericMeta,
     )
+    try:  # python 3.6
+        from typing_extensions import _Literal
+    except ImportError:  # python 2.7
+        from typing import _Literal
 
 
 def _gorg(cls):
@@ -147,6 +152,13 @@ def is_union_type(tp):
         return (tp is Union or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
     return type(tp) is _Union
+
+
+def is_literal_type(tp):
+    if NEW_TYPING:
+        return (tp is Literal or
+                isinstance(tp, _GenericAlias) and tp.__origin__ is Literal)
+    return type(tp) is _Literal
 
 
 def is_typevar(tp):
@@ -327,6 +339,8 @@ def get_args(tp, evaluate=None):
         return ()
     if is_classvar(tp):
         return (tp.__type__,)
+    if is_literal_type(tp):
+        return tp.__values__ or ()
     if (
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
