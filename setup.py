@@ -34,7 +34,7 @@ classifiers = [
 
 install_requires = [
     'mypy_extensions >= 0.3.0',
-    'typing >= 3.6.1;python_version<"3.5"',
+    'typing >= 3.7.4;python_version<"3.5"',
     'typing_extensions >= 3.7.4',
 ]
 
