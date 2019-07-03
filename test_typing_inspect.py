@@ -190,6 +190,10 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
                          (int, Callable[[Tuple[T, ...]], str]))
 
+        # ClassVar special-casing
+        self.assertEqual(get_args(ClassVar, evaluate=True), ())
+        self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
+
         # Literal special-casing
         self.assertEqual(get_args(Literal, evaluate=True), ())
         self.assertEqual(get_args(Literal["value"], evaluate=True), ("value",))

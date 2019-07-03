@@ -338,7 +338,7 @@ def get_args(tp, evaluate=None):
             return res
         return ()
     if is_classvar(tp):
-        return (tp.__type__,)
+        return (tp.__type__,) if tp.__type__ is not None else ()
     if is_literal_type(tp):
         return tp.__values__ or ()
     if (
