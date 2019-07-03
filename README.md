@@ -5,7 +5,7 @@ Typing Inspect
 
 The ``typing_inspect`` module defines experimental API for runtime
 inspection of types defined in the Python standard ``typing`` module.
-Works with ``typing`` version ``3.6.1`` and later. Example usage:
+Works with ``typing`` version ``3.7.4`` and later. Example usage:
 
 ```python
 from typing import Generic, TypeVar, Iterable, Mapping, Union
