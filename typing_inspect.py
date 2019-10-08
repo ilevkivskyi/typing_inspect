@@ -158,7 +158,7 @@ def is_union_type(tp):
     if NEW_TYPING:
         return (tp is Union or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
-    return type(tp) is _Union or type(tp) is Union
+    return type(tp) is _Union
 
 
 def is_literal_type(tp):
