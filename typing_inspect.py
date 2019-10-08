@@ -31,10 +31,14 @@ else:
         _Union = type(Union)
         WITH_CLASSVAR = False
 
+    WITH_LITERAL = True
     try:  # python 3.6
         from typing_extensions import _Literal
     except ImportError:  # python 2.7
-        from typing import _Literal
+        try:
+            from typing import _Literal
+        except ImportError:
+            WITH_LITERAL = False
 
 
 def _gorg(cls):
@@ -165,7 +169,7 @@ def is_literal_type(tp):
     if NEW_TYPING:
         return (tp is Literal or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is Literal)
-    return type(tp) is _Literal
+    return WITH_LITERAL and type(tp) is _Literal
 
 
 def is_typevar(tp):
