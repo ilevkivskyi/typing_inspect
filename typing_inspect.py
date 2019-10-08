@@ -274,7 +274,14 @@ def get_parameters(tp):
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
     ):
-        return tp.__parameters__ if tp.__parameters__ is not None else ()
+        try:
+            return tp.__parameters__ if tp.__parameters__ is not None else ()
+        except AttributeError:
+            # python < 3.5.2 - union ?
+            if is_union_type(tp):
+                return tp.__union_params__ if tp.__union_params__ is not None else ()
+            else:
+                return ()
     return ()
 
 
@@ -299,7 +306,14 @@ def get_last_args(tp):
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
     ):
-        return tp.__args__ if tp.__args__ is not None else ()
+        try:
+            return tp.__args__ if tp.__args__ is not None else ()
+        except AttributeError:
+            # python 3.5.2 - union ?
+            if is_union_type(tp):
+                return tp.__union_params__ if tp.__union_params__ is not None else ()
+            else:
+                return ()
     return ()
 
 
@@ -366,7 +380,9 @@ def get_args(tp, evaluate=None):
             if is_union_type(tp):
                 return tp.__union_params__
             elif is_generic_type(tp):
-                return tp.__parameters__
+                # with the backport it is __args__,
+                # otherwise it is __parameters__
+                return tp.__parameters__ or tp.__args__
             elif is_callable_type(tp):
                 return tp.__args__, tp.__result__
             elif is_tuple_type(tp):
