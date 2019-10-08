@@ -21,9 +21,16 @@ if NEW_TYPING:
     from typing_extensions import Literal
 else:
     from typing import (
-        Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
-        _ClassVar, GenericMeta,
+        Callable, CallableMeta, Union, TupleMeta, TypeVar, GenericMeta,
     )
+    try:
+        from typing import _Union, _ClassVar
+        WITH_CLASSVAR = True
+    except ImportError:
+        # support for very old typing module <=3.5.3
+        _Union = type(Union)
+        WITH_CLASSVAR = False
+
     try:  # python 3.6
         from typing_extensions import _Literal
     except ImportError:  # python 2.7
@@ -151,7 +158,7 @@ def is_union_type(tp):
     if NEW_TYPING:
         return (tp is Union or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
-    return type(tp) is _Union
+    return type(tp) is _Union or type(tp) is Union
 
 
 def is_literal_type(tp):
@@ -183,7 +190,10 @@ def is_classvar(tp):
     if NEW_TYPING:
         return (tp is ClassVar or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is ClassVar)
-    return type(tp) is _ClassVar
+    elif WITH_CLASSVAR:
+        return type(tp) is _ClassVar
+    else:
+        return False
 
 
 def get_last_origin(tp):
@@ -345,19 +355,31 @@ def get_args(tp, evaluate=None):
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
     ):
-        tree = tp._subs_tree()
-        if isinstance(tree, tuple) and len(tree) > 1:
-            if not evaluate:
-                return tree[1:]
-            res = _eval_args(tree[1:])
-            if get_origin(tp) is Callable and res[0] is not Ellipsis:
-                res = (list(res[:-1]), res[-1])
-            return res
+        try:
+            tree = tp._subs_tree()
+        except AttributeError:
+            # Old python typing module <= 3.5.3
+            if is_union_type(tp):
+                return tp.__union_params__
+            elif is_generic_type(tp):
+                return tp.__parameters__
+            elif is_callable_type(tp):
+                return tp.__args__, tp.__result__
+            elif is_tuple_type(tp):
+                return tp.__tuple_params__
+        else:
+            if isinstance(tree, tuple) and len(tree) > 1:
+                if not evaluate:
+                    return tree[1:]
+                res = _eval_args(tree[1:])
+                if get_origin(tp) is Callable and res[0] is not Ellipsis:
+                    res = (list(res[:-1]), res[-1])
+                return res
     return ()
 
 
 def get_bound(tp):
-    """Return the bound to a `TypeVar` if any.
+    """Returns the type bound to a `TypeVar` if any.
 
     It the type is not a `TypeVar`, a `TypeError` is raised.
     Examples::
