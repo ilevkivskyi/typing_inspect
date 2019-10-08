@@ -379,7 +379,7 @@ def get_args(tp, evaluate=None):
 
 
 def get_bound(tp):
-    """Returns the type bound to a `TypeVar` if any.
+    """Return the type bound to a `TypeVar` if any.
 
     It the type is not a `TypeVar`, a `TypeError` is raised.
     Examples::
