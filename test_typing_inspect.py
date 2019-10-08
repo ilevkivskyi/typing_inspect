@@ -6,9 +6,18 @@ from typing_inspect import (
 )
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
-    Union, ClassVar, Callable, Optional, TypeVar, Sequence, Mapping,
+    Union, Callable, Optional, TypeVar, Sequence, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
+try:
+    from typing import ClassVar
+    WITH_CLASSVAR = True
+    CLASSVAR_GENERIC = [ClassVar[List[int]], ClassVar]
+    CLASSVAR_TYPEVAR = [ClassVar[int]]
+except ImportError:
+    WITH_CLASSVAR = False
+    CLASSVAR_GENERIC = []
+    CLASSVAR_TYPEVAR = []
 
 import sys
 from mypy_extensions import TypedDict
@@ -44,8 +53,8 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
-        nonsamples = [int, Union[int, str], Union[int, T], ClassVar[List[int]],
-                      Callable[..., T], ClassVar, Optional, bytes, list]
+        nonsamples = [int, Union[int, str], Union[int, T]] + CLASSVAR_GENERIC \
+                     + [Callable[..., T], Optional, bytes, list]
         self.sample_test(is_generic_type, samples, nonsamples)
 
     def test_callable(self):
@@ -116,9 +125,10 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         S_co = TypeVar('S_co', covariant=True)
         samples = [T, S_co]
-        nonsamples = [int, Union[T, int], Union[T, S_co], type, ClassVar[int]]
+        nonsamples = [int, Union[T, int], Union[T, S_co], type] + CLASSVAR_TYPEVAR
         self.sample_test(is_typevar, samples, nonsamples)
 
+    @skipIf(not WITH_CLASSVAR, "ClassVar is not present")
     def test_classvar(self):
         T = TypeVar('T')
         samples = [ClassVar, ClassVar[int], ClassVar[List[T]]]
@@ -132,7 +142,8 @@ class GetUtilityTestCase(TestCase):
     def test_last_origin(self):
         T = TypeVar('T')
         self.assertEqual(get_last_origin(int), None)
-        self.assertEqual(get_last_origin(ClassVar[int]), None)
+        if WITH_CLASSVAR:
+            self.assertEqual(get_last_origin(ClassVar[int]), None)
         self.assertEqual(get_last_origin(Generic[T]), Generic)
         self.assertEqual(get_last_origin(Union[T, int][str]), Union[T, int])
         self.assertEqual(get_last_origin(List[Tuple[T, T]][int]), List[Tuple[T, T]])
@@ -141,7 +152,8 @@ class GetUtilityTestCase(TestCase):
     def test_origin(self):
         T = TypeVar('T')
         self.assertEqual(get_origin(int), None)
-        self.assertEqual(get_origin(ClassVar[int]), None)
+        if WITH_CLASSVAR:
+            self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
         self.assertEqual(get_origin(List[Tuple[T, T]][int]), list if NEW_TYPING else List)
@@ -165,7 +177,8 @@ class GetUtilityTestCase(TestCase):
         S = TypeVar('S')
         self.assertEqual(get_last_args(int), ())
         self.assertEqual(get_last_args(Union), ())
-        self.assertEqual(get_last_args(ClassVar[int]), (int,))
+        if WITH_CLASSVAR:
+            self.assertEqual(get_last_args(ClassVar[int]), (int,))
         self.assertEqual(get_last_args(Union[T, int]), (T, int))
         self.assertEqual(get_last_args(Iterable[Tuple[T, S]][int, T]), (int, T))
         self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
@@ -191,8 +204,9 @@ class GetUtilityTestCase(TestCase):
                          (int, Callable[[Tuple[T, ...]], str]))
 
         # ClassVar special-casing
-        self.assertEqual(get_args(ClassVar, evaluate=True), ())
-        self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
+        if WITH_CLASSVAR:
+            self.assertEqual(get_args(ClassVar, evaluate=True), ())
+            self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
 
         # Literal special-casing
         self.assertEqual(get_args(Literal, evaluate=True), ())
