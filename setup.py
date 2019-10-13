@@ -5,7 +5,7 @@
 import sys
 from setuptools import setup
 
-version = '0.4.0'
+version = '0.5.0'
 description = 'Runtime inspection utilities for typing module.'
 long_description = '''
 Typing Inspect
