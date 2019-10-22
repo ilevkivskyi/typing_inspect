@@ -3,7 +3,7 @@ from typing_inspect import (
     is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
     get_parameters, get_last_args, get_args, get_bound, get_constraints, get_generic_type,
     get_generic_bases, get_last_origin, typed_dict_keys,
-    WITH_LITERAL)
+    WITH_LITERAL, LEGACY_TYPING)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, Callable, Optional, TypeVar, Sequence, Mapping,
@@ -81,8 +81,13 @@ class IsUtilityTestCase(TestCase):
     def test_callable(self):
         samples = [Callable, Callable[..., int],
                    Callable[[int, int], Iterable[str]]]
-        nonsamples = [int, type, 42, [], List[int],
-                      Union[callable, Callable[..., int]]]
+        nonsamples = [int, type, 42, [], List[int]]
+        try:
+            nonsamples.append(Union[callable, Callable[..., int]])
+        except TypeError:
+            # python 3.5.3 TypeError: Union[arg, ...]:
+            # each arg must be a type. Got <built-in function callable>.
+            pass
         self.sample_test(is_callable_type, samples, nonsamples)
         if SUBCLASSABLE_UNIONS:
             class MyClass(Callable[[int], int]):
@@ -178,7 +183,15 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_last_origin(Generic[T]), Generic)
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             self.assertEqual(get_last_origin(Union[T, int][str]), Union[T, int])
-        self.assertEqual(get_last_origin(List[Tuple[T, T]][int]), List[Tuple[T, T]])
+        base_tp = List[Tuple[T, T]]
+        try:
+            tp = base_tp[int]
+        except TypeError:
+            # python 3.5.3- TypeError: Cannot substitute int for
+            # typing.Tuple[~T, ~T] in typing.List[typing.Tuple[~T, ~T]]
+            pass
+        else:
+            self.assertEqual(get_last_origin(tp), List[Tuple[T, T]])
         self.assertEqual(get_last_origin(List), List)
 
     def test_origin(self):
@@ -188,7 +201,15 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
-        self.assertEqual(get_origin(List[Tuple[T, T]][int]), list if NEW_TYPING else List)
+        base_tp = List[Tuple[T, T]]
+        try:
+            tp = base_tp[int]
+        except TypeError:
+            # python 3.5.3- - TypeError: Cannot substitute int
+            # for typing.Tuple[~T, ~T] in typing.List[typing.Tuple[~T, ~T]]
+            pass
+        else:
+            self.assertEqual(get_origin(tp), list if NEW_TYPING else List)
 
     def test_parameters(self):
         T = TypeVar('T')
@@ -197,9 +218,14 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_parameters(int), ())
         self.assertEqual(get_parameters(Generic), ())
         self.assertEqual(get_parameters(Union), ())
-        self.assertEqual(get_parameters(List[int]), ())
+        if not LEGACY_TYPING:
+            self.assertEqual(get_parameters(List[int]), ())
+        else:
+            # in 3.5.3 a list has no __args__ and instead they are used in __parameters__
+            # in 3.5.1 the behaviour is normal again.
+            pass
         self.assertEqual(get_parameters(Generic[T]), (T,))
-        self.assertEqual(get_parameters(Tuple[List[T], List[S_co]]), (T, S_co))  # TODO fix () != (~T, +S_co)
+        self.assertEqual(get_parameters(Tuple[List[T], List[S_co]]), (T, S_co))
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             self.assertEqual(get_parameters(Union[S_co, Tuple[T, T]][int, U]), (U,))
         self.assertEqual(get_parameters(Mapping[T, Tuple[S_co, T]]), (T, S_co))
@@ -213,9 +239,20 @@ class GetUtilityTestCase(TestCase):
         if WITH_CLASSVAR:
             self.assertEqual(get_last_args(ClassVar[int]), (int,))
         self.assertEqual(get_last_args(Union[T, int]), (T, int))
-        self.assertEqual(get_last_args(Iterable[Tuple[T, S]][int, T]), (int, T))
-        # TODO fix self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
-        # TODO fix self.assertEqual(get_last_args(Callable[[], int]), (int,))
+        base_tp = Iterable[Tuple[T, S]]
+        try:
+            tp = base_tp[int, T]
+        except TypeError:
+            # python 3.5.3- - TypeError: Cannot change parameter count from 1 to 2
+            pass
+        else:
+            self.assertEqual(get_last_args(tp), (int, T))
+        if LEGACY_TYPING:
+            self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S))
+            self.assertEqual(get_last_args(Callable[[], int]), ())
+        else:
+            self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
+            self.assertEqual(get_last_args(Callable[[], int]), (int,))
 
     @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_args(self):
@@ -232,9 +269,25 @@ class GetUtilityTestCase(TestCase):
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             self.assertEqual(get_args(Union[int, Tuple[T, int]][str], evaluate=True),
                              (int, Tuple[str, int]))
-        self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
-                         (int, Tuple[Optional[int], Optional[int]]))                 # TODO fix AssertionError: (typing.Union[int, NoneType],) != (<class 'int'>, typing.Tuple[typing.Union[int, NoneType], typing.Union[int, NoneType]])
-        self.assertEqual(get_args(Callable[[], T][int], evaluate=True), ([], int,))  # TODO fix TypeError: This Callable type is already parameterized.
+        base_tp = Dict[int, Tuple[T, T]]
+        try:
+            tp = base_tp[Optional[int]]
+        except TypeError:
+            # python 3.5.3 - TypeError: Cannot change parameter count from 2 to 1
+            pass
+        else:
+            self.assertEqual(get_args(tp, evaluate=True),
+                             (int, Tuple[Optional[int], Optional[int]]))
+
+        base_tp = Callable[[], T]
+        try:
+            tp = base_tp[int]
+        except TypeError:
+            # python 3.5.3- - TypeError: This Callable type is already parameterized.
+            pass
+        else:
+            self.assertEqual(get_args(tp, evaluate=True), ([], int,))
+
         self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
                          (int, Callable[[Tuple[T, ...]], str]))
 
@@ -265,14 +318,19 @@ class GetUtilityTestCase(TestCase):
         T = TypeVar('T')
         class Node(Generic[T]): pass
         self.assertIs(get_generic_type(Node()), Node)
-        self.assertIs(get_generic_type(Node[int]()), Node[int])  # TODO fix AssertionError: Node<~T> is not Node<~T>[int]
-        self.assertIs(get_generic_type(Node[T]()), Node[T],)     # TODO fix AssertionError: Node<~T> is not Node<~T>[~T]<~T>
+        if not LEGACY_TYPING:
+            self.assertIs(get_generic_type(Node[int]()), Node[int])
+            self.assertIs(get_generic_type(Node[T]()), Node[T],)
+        else:
+            # Node[int]() was creating an object of NEW type Node[~T]
+            # and Node[T]() was creating an object of NEW type Node[~T]
+            pass
         self.assertIs(get_generic_type(1), int)
 
     def test_generic_bases(self):
         class MyClass(List[int], Mapping[str, List[int]]): pass
         self.assertEqual(get_generic_bases(MyClass),
-                         (List[int], Mapping[str, List[int]]))  # TODO fix () != (typing.List<~T>[int], typing.Mapping<~KT, +VT_co>[str, typing.List<~T>[int]])
+                         (List[int], Mapping[str, List[int]]))
         self.assertEqual(get_generic_bases(int), ())
 
     @skipUnless(PY36, "Python 3.6 required")
