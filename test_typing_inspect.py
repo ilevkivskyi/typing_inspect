@@ -74,9 +74,9 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
-        nonsamples = ([int, Union[int, str], Union[int, T]] +
-                      CLASSVAR_GENERIC +
-                      [Callable[..., T], Optional, bytes, list])
+        nonsamples = [int, Union[int, str], Union[int, T]]
+        nonsamples += CLASSVAR_GENERIC
+        nonsamples += [Callable[..., T], Optional, bytes, list]
         self.sample_test(is_generic_type, samples, nonsamples)
 
     def test_callable(self):
