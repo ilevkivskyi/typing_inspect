@@ -23,21 +23,21 @@ try:
     class Foo(Callable[[int], int]):
         pass
     SUBCLASSABLE_UNIONS = True
-except:
+except:  # noqa E722,B001
     SUBCLASSABLE_UNIONS = False
 
 try:
     class MyClass(Tuple[str, int]):
         pass
     SUBCLASSABLE_TUPLES = True
-except:
+except:  # noqa E722,B001
     SUBCLASSABLE_TUPLES = False
 
 try:
     T = TypeVar('T')
     Union[T, str][int]
     EXISTING_UNIONS_SUBSCRIPTABLE = True
-except:
+except:  # noqa E722,B001
     EXISTING_UNIONS_SUBSCRIPTABLE = False
 
 import sys
@@ -74,8 +74,8 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
-        nonsamples = [int, Union[int, str], Union[int, T]] + CLASSVAR_GENERIC \
-                     + [Callable[..., T], Optional, bytes, list]
+        nonsamples = ([int, Union[int, str], Union[int, T]] + CLASSVAR_GENERIC
+                      + [Callable[..., T], Optional, bytes, list])
         self.sample_test(is_generic_type, samples, nonsamples)
 
     def test_callable(self):
@@ -120,7 +120,7 @@ class IsUtilityTestCase(TestCase):
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             samples += [Optional[T][int],             # direct union to none type 3
                         Union[str, T][type(None)]     # direct union to none type 5
-                       ]
+                        ]
 
         # nested unions are supported
         samples += [Union[str, Optional[int]]]         # nested Union 1
