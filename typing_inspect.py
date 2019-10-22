@@ -568,7 +568,6 @@ if LEGACY_TYPING:
                     return args[i]
         return arg
 
-
     def _remove_dups_flatten(parameters):
         """backport of _remove_dups_flatten"""
 
@@ -602,15 +601,14 @@ if LEGACY_TYPING:
                 continue
             if any(isinstance(t2, type) and issubclass(t1, t2)
                    for t2 in all_params - {t1}
-                   if not (isinstance(t2, GenericMeta) and
-                           get_origin(t2) is not None)
-                      and not isinstance(t2, TypeVar)):
+                   if (not (isinstance(t2, GenericMeta) and
+                            get_origin(t2) is not None) and
+                       not isinstance(t2, TypeVar))):
                 all_params.remove(t1)
         return tuple(t for t in params if t in all_params)
 
-
     def _subs_tree(cls, tvars=None, args=None):
-        """backport of typing._subs_tree, adapted so that it works with legacy versions """
+        """backport of typing._subs_tree, adapted for legacy versions """
         def _get_origin(cls):
             try:
                 return cls.__origin__
@@ -630,6 +628,7 @@ if LEGACY_TYPING:
 
         # Replace type variables in __args__ if asked ...
         tree_args = []
+
         def _get_args(cls):
             if is_union_type(cls):
                 cls_args = cls.__union_params__
@@ -652,7 +651,6 @@ if LEGACY_TYPING:
             tree_args = new_tree_args
         return tree_args
 
-
     def _union_subs_tree(tp, tvars=None, args=None):
         """ backport of Union._subs_tree """
         if tp is Union:
@@ -664,7 +662,6 @@ if LEGACY_TYPING:
             return tree_args[0]  # Union of a single type is that type
         return (Union,) + tree_args
 
-
     def _generic_subs_tree(tp, tvars=None, args=None):
         """ backport of GenericMeta._subs_tree """
         if tp.__origin__ is None:
@@ -672,14 +669,12 @@ if LEGACY_TYPING:
         tree_args = _subs_tree(tp, tvars, args)
         return (_gorg(tp),) + tuple(tree_args)
 
-
     def _tuple_subs_tree(tp, tvars=None, args=None):
         """ ad-hoc function (inspired by union) for legacy typing """
         if tp is Tuple:
             return Tuple  # Nothing to substitute
         tree_args = _subs_tree(tp, tvars, args)
         return (Tuple,) + tuple(tree_args)
-
 
     def _has_type_var(t):
         if t is None:
