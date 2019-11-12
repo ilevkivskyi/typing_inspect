@@ -435,3 +435,26 @@ def typed_dict_keys(td):
     if isinstance(td, _TypedDictMeta):
         return td.__annotations__.copy()
     return None
+
+
+def typed_dict_values(td):
+    """If td is a TypedDict class, return a set of all types.
+    Otherwise, return None. Examples::
+
+        class TD(TypedDict):
+            x: int
+            y: int
+            z: str
+        class Other(dict):
+            x: int
+            y: int
+            z: str
+
+        typed_dict_values(TD) == {int, str}
+        typed_dict_values(dict) == None
+        typed_dict_values(Other) == None
+    """
+    td_dict = typed_dict_keys(td)
+    if td_dict:
+        return set(td_dict.values())
+    return None

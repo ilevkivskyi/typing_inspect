@@ -2,7 +2,7 @@ from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
     is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
     get_parameters, get_last_args, get_args, get_bound, get_constraints, get_generic_type,
-    get_generic_bases, get_last_origin, typed_dict_keys,
+    get_generic_bases, get_last_origin, typed_dict_keys, typed_dict_values,
 )
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
@@ -20,9 +20,11 @@ PY36_TESTS = """
 class TD(TypedDict):
     x: int
     y: int
+    z: str
 class Other(dict):
     x: int
     y: int
+    z: str
 """
 
 PY36 = sys.version_info[:3] >= (3, 6, 0)
@@ -227,12 +229,16 @@ class GetUtilityTestCase(TestCase):
 
     @skipUnless(PY36, "Python 3.6 required")
     def test_typed_dict(self):
-        TDOld = TypedDict("TDOld", {'x': int, 'y': int})
-        self.assertEqual(typed_dict_keys(TD), {'x': int, 'y': int})
-        self.assertEqual(typed_dict_keys(TDOld), {'x': int, 'y': int})
+        TDOld = TypedDict("TDOld", {'x': int, 'y': int, 'z': str})
+        self.assertEqual(typed_dict_keys(TD), {'x': int, 'y': int, 'z': str})
+        self.assertEqual(typed_dict_keys(TDOld), {'x': int, 'y': int, 'z': str})
         self.assertIs(typed_dict_keys(dict), None)
         self.assertIs(typed_dict_keys(Other), None)
         self.assertIsNot(typed_dict_keys(TD), TD.__annotations__)
+        self.assertEqual(typed_dict_values(TD), {int, str})
+        self.assertEqual(typed_dict_values(TDOld), {int, str})
+        self.assertIs(typed_dict_values(dict), None)
+        self.assertIs(typed_dict_values(Other), None)
 
 
 if __name__ == '__main__':
