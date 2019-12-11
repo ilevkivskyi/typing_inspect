@@ -2,8 +2,8 @@ import sys
 from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
     is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
-    get_parameters, get_last_args, get_args, get_bound, get_constraints, get_generic_type,
-    get_generic_bases, get_last_origin, typed_dict_keys,
+    get_parameters, get_last_args, get_args, get_bound, get_constraints,
+    get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
     WITH_LITERAL, LEGACY_TYPING)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
@@ -121,7 +121,8 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
-        nonsamples = [int, Union[int, str], Union[int, T], Callable[..., T], Optional, bytes, list] + CLASSVAR_GENERIC
+        nonsamples = [int, Union[int, str], Union[int, T], Callable[..., T],
+                      Optional, bytes, list] + CLASSVAR_GENERIC
         self.sample_test(is_generic_type, samples, nonsamples)
 
     def test_callable(self):
@@ -160,8 +161,8 @@ class IsUtilityTestCase(TestCase):
                    Union[int, type(None)],    # direct union to none type 4
                    ]
         if EXISTING_UNIONS_SUBSCRIPTABLE:
-            samples += [Optional[T][int],             # direct union to none type 3
-                        Union[str, T][type(None)]     # direct union to none type 5
+            samples += [Optional[T][int],          # direct union to none type 3
+                        Union[str, T][type(None)]  # direct union to none type 5
                         ]
 
         # nested unions are supported
