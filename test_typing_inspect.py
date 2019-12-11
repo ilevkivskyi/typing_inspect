@@ -11,6 +11,8 @@ from typing import (
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
 
+from mypy_extensions import TypedDict
+from typing_extensions import Literal
 
 # Does this raise an exception ?
 #      from typing import ClassVar
@@ -86,10 +88,6 @@ if sys.version_info[:3] < (3, 5, 4):
 else:
     CALLABLE_CAN_BE_PARAMETRIZED = True
 
-
-import sys
-from mypy_extensions import TypedDict
-from typing_extensions import Literal
 
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
