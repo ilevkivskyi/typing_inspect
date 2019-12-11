@@ -81,7 +81,7 @@ else:
 # Does this raise an exception ?
 #    Callable[[T], int][int]
 #    Callable[[], T][int]
-if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+if sys.version_info[:3] < (3, 5, 4):
     CALLABLE_CAN_BE_PARAMETRIZED = False
 else:
     CALLABLE_CAN_BE_PARAMETRIZED = True
