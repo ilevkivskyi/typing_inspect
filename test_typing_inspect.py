@@ -1,3 +1,4 @@
+import sys
 from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
     is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
@@ -9,36 +10,82 @@ from typing import (
     Union, Callable, Optional, TypeVar, Sequence, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
-try:
+
+
+# Does this raise an exception ?
+#      from typing import ClassVar
+if sys.version_info < (3, 5, 3):
+    WITH_CLASSVAR = False
+    CLASSVAR_GENERIC = []
+    CLASSVAR_TYPEVAR = []
+else:
     from typing import ClassVar
     WITH_CLASSVAR = True
     CLASSVAR_GENERIC = [ClassVar[List[int]], ClassVar]
     CLASSVAR_TYPEVAR = [ClassVar[int]]
-except ImportError:
-    WITH_CLASSVAR = False
-    CLASSVAR_GENERIC = []
-    CLASSVAR_TYPEVAR = []
 
-try:
-    class Foo(Callable[[int], int]):
-        pass
-    SUBCLASSABLE_UNIONS = True
-except:  # noqa E722,B001
-    SUBCLASSABLE_UNIONS = False
 
-try:
-    class MyClass(Tuple[str, int]):
-        pass
-    SUBCLASSABLE_TUPLES = True
-except:  # noqa E722,B001
+# Does this raise an exception ?
+#     class Foo(Callable[[int], int]):
+#         pass
+if sys.version_info < (3, 5, 3):
+    SUBCLASSABLE_CALLABLES = False
+else:
+    SUBCLASSABLE_CALLABLES = True
+
+
+# Does this raise an exception ?
+#     class MyClass(Tuple[str, int]):
+#         pass
+if sys.version_info < (3, 5, 3):
     SUBCLASSABLE_TUPLES = False
+else:
+    SUBCLASSABLE_TUPLES = True
 
-try:
-    T = TypeVar('T')
-    Union[T, str][int]
-    EXISTING_UNIONS_SUBSCRIPTABLE = True
-except:  # noqa E722,B001
+
+# Does this raise an exception ?
+#     T = TypeVar('T')
+#     Union[T, str][int]
+if sys.version_info < (3, 5, 3):
     EXISTING_UNIONS_SUBSCRIPTABLE = False
+else:
+    EXISTING_UNIONS_SUBSCRIPTABLE = True
+
+
+# Does this raise an exception ?
+#     Union[callable, Callable[..., int]]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    UNION_SUPPORTS_BUILTIN_CALLABLE = False
+else:
+    UNION_SUPPORTS_BUILTIN_CALLABLE = True
+
+
+# Does this raise an exception ?
+#   Tuple[T][int]
+#   List[Tuple[T]][int]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    GENERIC_TUPLE_PARAMETRIZABLE = False
+else:
+    GENERIC_TUPLE_PARAMETRIZABLE = True
+
+
+# Does this raise an exception ?
+#    Dict[T, T][int]
+#    Dict[int, Tuple[T, T]][int]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    GENERIC_WITH_MULTIPLE_IDENTICAL_PARAMETERS_CAN_BE_PARAMETRIZED_ONCE = False
+else:
+    GENERIC_WITH_MULTIPLE_IDENTICAL_PARAMETERS_CAN_BE_PARAMETRIZED_ONCE = True
+
+
+# Does this raise an exception ?
+#    Callable[[T], int][int]
+#    Callable[[], T][int]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    CALLABLE_CAN_BE_PARAMETRIZED = False
+else:
+    CALLABLE_CAN_BE_PARAMETRIZED = True
+
 
 import sys
 from mypy_extensions import TypedDict
@@ -74,23 +121,17 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
-        nonsamples = [int, Union[int, str], Union[int, T]]
-        nonsamples += CLASSVAR_GENERIC
-        nonsamples += [Callable[..., T], Optional, bytes, list]
+        nonsamples = [int, Union[int, str], Union[int, T], Callable[..., T], Optional, bytes, list] + CLASSVAR_GENERIC
         self.sample_test(is_generic_type, samples, nonsamples)
 
     def test_callable(self):
         samples = [Callable, Callable[..., int],
                    Callable[[int, int], Iterable[str]]]
         nonsamples = [int, type, 42, [], List[int]]
-        try:
+        if UNION_SUPPORTS_BUILTIN_CALLABLE:
             nonsamples.append(Union[callable, Callable[..., int]])
-        except TypeError:
-            # python 3.5.3 TypeError: Union[arg, ...]:
-            # each arg must be a type. Got <built-in function callable>.
-            pass
         self.sample_test(is_callable_type, samples, nonsamples)
-        if SUBCLASSABLE_UNIONS:
+        if SUBCLASSABLE_CALLABLES:
             class MyClass(Callable[[int], int]):
                 pass
             self.assertTrue(is_callable_type(MyClass))
@@ -184,14 +225,8 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_last_origin(Generic[T]), Generic)
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             self.assertEqual(get_last_origin(Union[T, int][str]), Union[T, int])
-        base_tp = List[Tuple[T, T]]
-        try:
-            tp = base_tp[int]
-        except TypeError:
-            # python 3.5.3- TypeError: Cannot substitute int for
-            # typing.Tuple[~T, ~T] in typing.List[typing.Tuple[~T, ~T]]
-            pass
-        else:
+        if GENERIC_TUPLE_PARAMETRIZABLE:
+            tp = List[Tuple[T, T]][int]
             self.assertEqual(get_last_origin(tp), List[Tuple[T, T]])
         self.assertEqual(get_last_origin(List), List)
 
@@ -202,14 +237,8 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
-        base_tp = List[Tuple[T, T]]
-        try:
-            tp = base_tp[int]
-        except TypeError:
-            # python 3.5.3- - TypeError: Cannot substitute int
-            # for typing.Tuple[~T, ~T] in typing.List[typing.Tuple[~T, ~T]]
-            pass
-        else:
+        if GENERIC_TUPLE_PARAMETRIZABLE:
+            tp = List[Tuple[T, T]][int]
             self.assertEqual(get_origin(tp), list if NEW_TYPING else List)
 
     def test_parameters(self):
@@ -240,13 +269,8 @@ class GetUtilityTestCase(TestCase):
         if WITH_CLASSVAR:
             self.assertEqual(get_last_args(ClassVar[int]), (int,))
         self.assertEqual(get_last_args(Union[T, int]), (T, int))
-        base_tp = Iterable[Tuple[T, S]]
-        try:
-            tp = base_tp[int, T]
-        except TypeError:
-            # python 3.5.3- - TypeError: Cannot change parameter count from 1 to 2
-            pass
-        else:
+        if GENERIC_TUPLE_PARAMETRIZABLE:
+            tp = Iterable[Tuple[T, S]][int, T]
             self.assertEqual(get_last_args(tp), (int, T))
         if LEGACY_TYPING:
             self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S))
@@ -270,23 +294,12 @@ class GetUtilityTestCase(TestCase):
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             self.assertEqual(get_args(Union[int, Tuple[T, int]][str], evaluate=True),
                              (int, Tuple[str, int]))
-        base_tp = Dict[int, Tuple[T, T]]
-        try:
-            tp = base_tp[Optional[int]]
-        except TypeError:
-            # python 3.5.3 - TypeError: Cannot change parameter count from 2 to 1
-            pass
-        else:
+        if GENERIC_WITH_MULTIPLE_IDENTICAL_PARAMETERS_CAN_BE_PARAMETRIZED_ONCE:
+            tp = Dict[int, Tuple[T, T]][Optional[int]]
             self.assertEqual(get_args(tp, evaluate=True),
                              (int, Tuple[Optional[int], Optional[int]]))
-
-        base_tp = Callable[[], T]
-        try:
-            tp = base_tp[int]
-        except TypeError:
-            # python 3.5.3- - TypeError: This Callable type is already parameterized.
-            pass
-        else:
+        if CALLABLE_CAN_BE_PARAMETRIZED:
+            tp = Callable[[], T][int]
             self.assertEqual(get_args(tp, evaluate=True), ([], int,))
 
         self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
