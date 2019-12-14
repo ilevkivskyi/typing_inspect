@@ -268,6 +268,10 @@ class GetUtilityTestCase(TestCase):
         if WITH_CLASSVAR:
             self.assertEqual(get_last_args(ClassVar[int]), (int,))
         self.assertEqual(get_last_args(Union[T, int]), (T, int))
+        self.assertEqual(get_last_args(Union[str, int]), (str, int))
+        self.assertEqual(get_last_args(Tuple[T, int]), (T, int))
+        self.assertEqual(get_last_args(Tuple[str, int]), (str, int))
+        self.assertEqual(get_last_args(Generic[T]), (T, ))
         if GENERIC_TUPLE_PARAMETRIZABLE:
             tp = Iterable[Tuple[T, S]][int, T]
             self.assertEqual(get_last_args(tp), (int, T))
