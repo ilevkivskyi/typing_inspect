@@ -334,22 +334,32 @@ def get_last_args(tp):
     if NEW_TYPING:
         raise ValueError('This function is only supported in Python 3.6,'
                          ' use get_args instead')
-    if is_classvar(tp):
+    elif is_classvar(tp):
         return (tp.__type__,) if tp.__type__ is not None else ()
-    if (
-        is_generic_type(tp) or is_union_type(tp) or
-        is_callable_type(tp) or is_tuple_type(tp)
-    ):
+    elif is_generic_type(tp):
+        try:
+            if tp.__args__ is not None and len(tp.__args__) > 0:
+                return tp.__args__
+        except AttributeError:
+            # python 3.5.1
+            pass
+        return tp.__parameters__ if tp.__parameters__ is not None else ()
+    elif is_union_type(tp):
         try:
             return tp.__args__ if tp.__args__ is not None else ()
         except AttributeError:
-            # python 3.5.2 - union ?
-            # TODO maybe this is incomplete ? - see get_parameters
-            if is_union_type(tp):
-                return tp.__union_params__ if tp.__union_params__ is not None else ()
-            else:
-                return ()
-    return ()
+            # python 3.5.2
+            return tp.__union_params__ if tp.__union_params__ is not None else ()
+    elif is_callable_type(tp):
+        return tp.__args__ if tp.__args__ is not None else ()
+    elif is_tuple_type(tp):
+        try:
+            return tp.__args__ if tp.__args__ is not None else ()
+        except AttributeError:
+            # python 3.5.2
+            return tp.__tuple_params__ if tp.__tuple_params__ is not None else ()
+    else:
+        return ()
 
 
 def _eval_args(args):
