@@ -254,51 +254,22 @@ def get_origin(tp):
     return None
 
 
-if not LEGACY_TYPING:
-    def get_parameters(tp):
-        """Return type parameters of a parameterizable type as a tuple
-        in lexicographic order. Parameterizable types are generic types,
-        unions, tuple types and callable types. Examples::
+def get_parameters(tp):
+    """Return type parameters of a parameterizable type as a tuple
+    in lexicographic order. Parameterizable types are generic types,
+    unions, tuple types and callable types. Examples::
 
-            get_parameters(int) == ()
-            get_parameters(Generic) == ()
-            get_parameters(Union) == ()
-            get_parameters(List[int]) == ()
+        get_parameters(int) == ()
+        get_parameters(Generic) == ()
+        get_parameters(Union) == ()
+        get_parameters(List[int]) == ()
 
-            get_parameters(Generic[T]) == (T,)
-            get_parameters(Tuple[List[T], List[S_co]]) == (T, S_co)
-            get_parameters(Union[S_co, Tuple[T, T]][int, U]) == (U,)
-            get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
-        """
-        if NEW_TYPING:
-            if (isinstance(tp, _GenericAlias) or
-                    isinstance(tp, type) and issubclass(tp, Generic) and
-                    tp is not Generic):
-                return tp.__parameters__
-            return ()
-        if (
-            is_generic_type(tp) or is_union_type(tp) or
-            is_callable_type(tp) or is_tuple_type(tp)
-        ):
-            return tp.__parameters__ if tp.__parameters__ is not None else ()
-        else:
-            return ()
-else:
-    def get_parameters(tp):
-        """Return type parameters of a parameterizable type as a tuple
-        in lexicographic order. Parameterizable types are generic types,
-        unions, tuple types and callable types. Examples::
-
-            get_parameters(int) == ()
-            get_parameters(Generic) == ()
-            get_parameters(Union) == ()
-            get_parameters(List[int]) == ()
-
-            get_parameters(Generic[T]) == (T,)
-            get_parameters(Tuple[List[T], List[S_co]]) == (T, S_co)
-            get_parameters(Union[S_co, Tuple[T, T]][int, U]) == (U,)
-            get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
-        """
+        get_parameters(Generic[T]) == (T,)
+        get_parameters(Tuple[List[T], List[S_co]]) == (T, S_co)
+        get_parameters(Union[S_co, Tuple[T, T]][int, U]) == (U,)
+        get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
+    """
+    if LEGACY_TYPING:
         # python <= 3.5.2
         if is_union_type(tp):
             params = []
@@ -316,7 +287,7 @@ else:
             if base_params is None:
                 return ()
             for bp_ in base_params:
-                for bp in (get_args(bp_) if is_tuple_type(bp_) else (bp_, )):
+                for bp in (get_args(bp_) if is_tuple_type(bp_) else (bp_,)):
                     if _has_type_var(bp) and not isinstance(bp, TypeVar):
                         raise TypeError(
                             "Cannot inherit from a generic class "
@@ -332,6 +303,20 @@ else:
                 return ()
         else:
             return ()
+    elif NEW_TYPING:
+        if (isinstance(tp, _GenericAlias) or
+                isinstance(tp, type) and issubclass(tp, Generic) and
+                tp is not Generic):
+            return tp.__parameters__
+        else:
+            return ()
+    elif (
+        is_generic_type(tp) or is_union_type(tp) or
+        is_callable_type(tp) or is_tuple_type(tp)
+    ):
+        return tp.__parameters__ if tp.__parameters__ is not None else ()
+    else:
+        return ()
 
 
 def get_last_args(tp):
@@ -499,30 +484,19 @@ def get_generic_type(obj):
     return gen_type if gen_type is not None else type(obj)
 
 
-if not LEGACY_TYPING:
-    def get_generic_bases(tp):
-        """Get generic base types of a type or empty tuple if not possible.
-        Example::
+def get_generic_bases(tp):
+    """Get generic base types of a type or empty tuple if not possible.
+    Example::
 
-            class MyClass(List[int], Mapping[str, List[int]]):
-                ...
-            MyClass.__bases__ == (List, Mapping)
-            get_generic_bases(MyClass) == (List[int], Mapping[str, List[int]])
-        """
-
-        return getattr(tp, '__orig_bases__', ())
-else:
-    def get_generic_bases(tp):
-        """Get generic base types of a type or empty tuple if not possible.
-        Example::
-
-            class MyClass(List[int], Mapping[str, List[int]]):
-                ...
-            MyClass.__bases__ == (List, Mapping)
-            get_generic_bases(MyClass) == (List[int], Mapping[str, List[int]])
-        """
-
+        class MyClass(List[int], Mapping[str, List[int]]):
+            ...
+        MyClass.__bases__ == (List, Mapping)
+        get_generic_bases(MyClass) == (List[int], Mapping[str, List[int]])
+    """
+    if LEGACY_TYPING:
         return tuple(t for t in tp.__bases__ if isinstance(t, GenericMeta))
+    else:
+        return getattr(tp, '__orig_bases__', ())
 
 
 def typed_dict_keys(td):
