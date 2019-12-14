@@ -529,175 +529,182 @@ def typed_dict_keys(td):
     return None
 
 
-if LEGACY_TYPING:
-    """
-    A few functions backported and adapted for the legacy context, and used above
-    """
+# A few functions backported and adapted for the LEGACY_TYPING context, and used above
 
-    def _replace_arg(arg, tvars, args):
-        """backport of _replace_arg"""
-        if tvars is None:
-            tvars = []
-        # if hasattr(arg, '_subs_tree') and isinstance(arg, (GenericMeta, _TypingBase)):
-        #     return arg._subs_tree(tvars, args)
-        if is_union_type(arg):
-            return _union_subs_tree(arg, tvars, args)
-        if is_tuple_type(arg):
-            return _tuple_subs_tree(arg, tvars, args)
-        if is_generic_type(arg):
-            return _generic_subs_tree(arg, tvars, args)
-        if isinstance(arg, TypeVar):
-            for i, tvar in enumerate(tvars):
-                if arg == tvar:
-                    return args[i]
-        return arg
+def _replace_arg(arg, tvars, args):
+    """backport of _replace_arg"""
+    if tvars is None:
+        tvars = []
+    # if hasattr(arg, '_subs_tree') and isinstance(arg, (GenericMeta, _TypingBase)):
+    #     return arg._subs_tree(tvars, args)
+    if is_union_type(arg):
+        return _union_subs_tree(arg, tvars, args)
+    if is_tuple_type(arg):
+        return _tuple_subs_tree(arg, tvars, args)
+    if is_generic_type(arg):
+        return _generic_subs_tree(arg, tvars, args)
+    if isinstance(arg, TypeVar):
+        for i, tvar in enumerate(tvars):
+            if arg == tvar:
+                return args[i]
+    return arg
 
-    def _remove_dups_flatten(parameters):
-        """backport of _remove_dups_flatten"""
 
-        # Flatten out Union[Union[...], ...].
-        params = []
-        for p in parameters:
-            if isinstance(p, _Union):  # and p.__origin__ is Union:
-                params.extend(p.__union_params__)  # p.__args__)
-            elif isinstance(p, tuple) and len(p) > 0 and p[0] is Union:
-                params.extend(p[1:])
-            else:
-                params.append(p)
-        # Weed out strict duplicates, preserving the first of each occurrence.
-        all_params = set(params)
-        if len(all_params) < len(params):
-            new_params = []
-            for t in params:
-                if t in all_params:
-                    new_params.append(t)
-                    all_params.remove(t)
-            params = new_params
-            assert not all_params, all_params
-        # Weed out subclasses.
-        # E.g. Union[int, Employee, Manager] == Union[int, Employee].
-        # If object is present it will be sole survivor among proper classes.
-        # Never discard type variables.
-        # (In particular, Union[str, AnyStr] != AnyStr.)
-        all_params = set(params)
-        for t1 in params:
-            if not isinstance(t1, type):
-                continue
-            if any(isinstance(t2, type) and issubclass(t1, t2)
-                   for t2 in all_params - {t1}
-                   if (not (isinstance(t2, GenericMeta) and
-                            get_origin(t2) is not None) and
-                       not isinstance(t2, TypeVar))):
-                all_params.remove(t1)
-        return tuple(t for t in params if t in all_params)
+def _remove_dups_flatten(parameters):
+    """backport of _remove_dups_flatten"""
 
-    def _subs_tree(cls, tvars=None, args=None):
-        """backport of typing._subs_tree, adapted for legacy versions """
-        def _get_origin(cls):
-            try:
-                return cls.__origin__
-            except AttributeError:
-                return None
-
-        current = _get_origin(cls)
-        if current is None:
-            if not is_union_type(cls) and not is_tuple_type(cls):
-                return cls
-
-        # Make of chain of origins (i.e. cls -> cls.__origin__)
-        orig_chain = []
-        while _get_origin(current) is not None:
-            orig_chain.append(current)
-            current = _get_origin(current)
-
-        # Replace type variables in __args__ if asked ...
-        tree_args = []
-
-        def _get_args(cls):
-            if is_union_type(cls):
-                cls_args = cls.__union_params__
-            elif is_tuple_type(cls):
-                cls_args = cls.__tuple_params__
-            else:
-                try:
-                    cls_args = cls.__args__
-                except AttributeError:
-                    cls_args = ()
-            return cls_args if cls_args is not None else ()
-
-        for arg in _get_args(cls):
-            tree_args.append(_replace_arg(arg, tvars, args))
-        # ... then continue replacing down the origin chain.
-        for ocls in orig_chain:
-            new_tree_args = []
-            for arg in _get_args(ocls):
-                new_tree_args.append(_replace_arg(arg, get_parameters(ocls), tree_args))
-            tree_args = new_tree_args
-        return tree_args
-
-    def _union_subs_tree(tp, tvars=None, args=None):
-        """ backport of Union._subs_tree """
-        if tp is Union:
-            return Union  # Nothing to substitute
-        tree_args = _subs_tree(tp, tvars, args)
-        # tree_args = tp.__union_params__ if tp.__union_params__ is not None else ()
-        tree_args = _remove_dups_flatten(tree_args)
-        if len(tree_args) == 1:
-            return tree_args[0]  # Union of a single type is that type
-        return (Union,) + tree_args
-
-    def _generic_subs_tree(tp, tvars=None, args=None):
-        """ backport of GenericMeta._subs_tree """
-        if tp.__origin__ is None:
-            return tp
-        tree_args = _subs_tree(tp, tvars, args)
-        return (_gorg(tp),) + tuple(tree_args)
-
-    def _tuple_subs_tree(tp, tvars=None, args=None):
-        """ ad-hoc function (inspired by union) for legacy typing """
-        if tp is Tuple:
-            return Tuple  # Nothing to substitute
-        tree_args = _subs_tree(tp, tvars, args)
-        return (Tuple,) + tuple(tree_args)
-
-    def _has_type_var(t):
-        if t is None:
-            return False
-        elif is_union_type(t):
-            return _union_has_type_var(t)
-        elif is_tuple_type(t):
-            return _tuple_has_type_var(t)
-        elif is_generic_type(t):
-            return _generic_has_type_var(t)
-        elif is_callable_type(t):
-            return _callable_has_type_var(t)
+    # Flatten out Union[Union[...], ...].
+    params = []
+    for p in parameters:
+        if isinstance(p, _Union):  # and p.__origin__ is Union:
+            params.extend(p.__union_params__)  # p.__args__)
+        elif isinstance(p, tuple) and len(p) > 0 and p[0] is Union:
+            params.extend(p[1:])
         else:
-            return False
+            params.append(p)
+    # Weed out strict duplicates, preserving the first of each occurrence.
+    all_params = set(params)
+    if len(all_params) < len(params):
+        new_params = []
+        for t in params:
+            if t in all_params:
+                new_params.append(t)
+                all_params.remove(t)
+        params = new_params
+        assert not all_params, all_params
+    # Weed out subclasses.
+    # E.g. Union[int, Employee, Manager] == Union[int, Employee].
+    # If object is present it will be sole survivor among proper classes.
+    # Never discard type variables.
+    # (In particular, Union[str, AnyStr] != AnyStr.)
+    all_params = set(params)
+    for t1 in params:
+        if not isinstance(t1, type):
+            continue
+        if any(isinstance(t2, type) and issubclass(t1, t2)
+               for t2 in all_params - {t1}
+               if (not (isinstance(t2, GenericMeta) and
+                        get_origin(t2) is not None) and
+                   not isinstance(t2, TypeVar))):
+            all_params.remove(t1)
+    return tuple(t for t in params if t in all_params)
 
-    def _union_has_type_var(tp):
-        if tp.__union_params__:
-            for t in tp.__union_params__:
-                if _has_type_var(t):
-                    return True
+
+def _subs_tree(cls, tvars=None, args=None):
+    """backport of typing._subs_tree, adapted for legacy versions """
+    def _get_origin(cls):
+        try:
+            return cls.__origin__
+        except AttributeError:
+            return None
+
+    current = _get_origin(cls)
+    if current is None:
+        if not is_union_type(cls) and not is_tuple_type(cls):
+            return cls
+
+    # Make of chain of origins (i.e. cls -> cls.__origin__)
+    orig_chain = []
+    while _get_origin(current) is not None:
+        orig_chain.append(current)
+        current = _get_origin(current)
+
+    # Replace type variables in __args__ if asked ...
+    tree_args = []
+
+    def _get_args(cls):
+        if is_union_type(cls):
+            cls_args = cls.__union_params__
+        elif is_tuple_type(cls):
+            cls_args = cls.__tuple_params__
+        else:
+            try:
+                cls_args = cls.__args__
+            except AttributeError:
+                cls_args = ()
+        return cls_args if cls_args is not None else ()
+
+    for arg in _get_args(cls):
+        tree_args.append(_replace_arg(arg, tvars, args))
+    # ... then continue replacing down the origin chain.
+    for ocls in orig_chain:
+        new_tree_args = []
+        for arg in _get_args(ocls):
+            new_tree_args.append(_replace_arg(arg, get_parameters(ocls), tree_args))
+        tree_args = new_tree_args
+    return tree_args
+
+
+def _union_subs_tree(tp, tvars=None, args=None):
+    """ backport of Union._subs_tree """
+    if tp is Union:
+        return Union  # Nothing to substitute
+    tree_args = _subs_tree(tp, tvars, args)
+    # tree_args = tp.__union_params__ if tp.__union_params__ is not None else ()
+    tree_args = _remove_dups_flatten(tree_args)
+    if len(tree_args) == 1:
+        return tree_args[0]  # Union of a single type is that type
+    return (Union,) + tree_args
+
+
+def _generic_subs_tree(tp, tvars=None, args=None):
+    """ backport of GenericMeta._subs_tree """
+    if tp.__origin__ is None:
+        return tp
+    tree_args = _subs_tree(tp, tvars, args)
+    return (_gorg(tp),) + tuple(tree_args)
+
+
+def _tuple_subs_tree(tp, tvars=None, args=None):
+    """ ad-hoc function (inspired by union) for legacy typing """
+    if tp is Tuple:
+        return Tuple  # Nothing to substitute
+    tree_args = _subs_tree(tp, tvars, args)
+    return (Tuple,) + tuple(tree_args)
+
+
+def _has_type_var(t):
+    if t is None:
+        return False
+    elif is_union_type(t):
+        return _union_has_type_var(t)
+    elif is_tuple_type(t):
+        return _tuple_has_type_var(t)
+    elif is_generic_type(t):
+        return _generic_has_type_var(t)
+    elif is_callable_type(t):
+        return _callable_has_type_var(t)
+    else:
         return False
 
-    def _tuple_has_type_var(tp):
-        if tp.__tuple_params__:
-            for t in tp.__tuple_params__:
-                if _has_type_var(t):
-                    return True
-        return False
 
-    def _callable_has_type_var(tp):
-        if tp.__args__:
-            for t in tp.__args__:
-                if _has_type_var(t):
-                    return True
-        return _has_type_var(tp.__result__)
+def _union_has_type_var(tp):
+    if tp.__union_params__:
+        for t in tp.__union_params__:
+            if _has_type_var(t):
+                return True
+    return False
 
-    def _generic_has_type_var(tp):
-        if tp.__parameters__:
-            for t in tp.__parameters__:
-                if _has_type_var(t):
-                    return True
-        return False
+
+def _tuple_has_type_var(tp):
+    if tp.__tuple_params__:
+        for t in tp.__tuple_params__:
+            if _has_type_var(t):
+                return True
+    return False
+
+
+def _callable_has_type_var(tp):
+    if tp.__args__:
+        for t in tp.__args__:
+            if _has_type_var(t):
+                return True
+    return _has_type_var(tp.__result__)
+
+
+def _generic_has_type_var(tp):
+    if tp.__parameters__:
+        for t in tp.__parameters__:
+            if _has_type_var(t):
+                return True
+    return False
