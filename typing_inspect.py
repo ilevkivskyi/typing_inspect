@@ -191,6 +191,7 @@ def is_new_type(tp):
 
         is_new_type(int) == False
         is_new_type(NewType('Age', int)) == True
+        is_new_type(NewType('Scores', List[Dict[str, float]])) == True
     """
     return getattr(tp, '__supertype__', None) is not None
 

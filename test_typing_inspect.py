@@ -133,6 +133,8 @@ class IsUtilityTestCase(TestCase):
             NewType('B', complex),
             NewType('C', List[int]),
             NewType('D', Union['p', 'y', 't', 'h', 'o', 'n']),
+            NewType('E', List[Dict[str, float]]),
+            NewType('F', NewType('F_', int)),
         ]
         nonsamples = [
             int,
