@@ -1,5 +1,5 @@
 from typing_inspect import (
-    is_generic_type, is_callable_type, is_tuple_type, is_union_type,
+    is_generic_type, is_callable_type, is_new_type, is_tuple_type, is_union_type,
     is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
     get_parameters, get_last_args, get_args, get_bound, get_constraints, get_generic_type,
     get_generic_bases, get_last_origin, typed_dict_keys,
@@ -8,6 +8,7 @@ from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, ClassVar, Callable, Optional, TypeVar, Sequence, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
+    NewType,
 )
 
 import sys
@@ -124,6 +125,25 @@ class IsUtilityTestCase(TestCase):
         samples = [ClassVar, ClassVar[int], ClassVar[List[T]]]
         nonsamples = [int, 42, Iterable, List[int], type, T]
         self.sample_test(is_classvar, samples, nonsamples)
+
+    def test_new_type(self):
+        T = TypeVar('T')
+        samples = [
+            NewType('A', int),
+            NewType('B', complex),
+            NewType('C', List[int]),
+            NewType('D', Union['p', 'y', 't', 'h', 'o', 'n']),
+        ]
+        nonsamples = [
+            int,
+            42,
+            Iterable,
+            List[int],
+            Union["u", "v"],
+            type,
+            T,
+        ]
+        self.sample_test(is_new_type, samples, nonsamples)
 
 
 class GetUtilityTestCase(TestCase):

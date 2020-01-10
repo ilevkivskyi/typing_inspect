@@ -186,6 +186,15 @@ def is_classvar(tp):
     return type(tp) is _ClassVar
 
 
+def is_new_type(tp):
+    """Tests if the type represents a type alias. Examples::
+
+        is_new_type(int) == False
+        is_new_type(NewType('Age', int)) == True
+    """
+    return getattr(tp, '__supertype__', None) is not None
+
+
 def get_last_origin(tp):
     """Get the last base of (multiply) subscripted type. Supports generic types,
     Union, Callable, and Tuple. Returns None for unsupported types.
