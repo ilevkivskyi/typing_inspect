@@ -8,7 +8,8 @@ Example usage::
 # NOTE: This module must support Python 2.7 in addition to Python 3.x
 
 import sys
-from mypy_extensions import _TypedDictMeta
+from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
+from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
 
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
@@ -432,6 +433,6 @@ def typed_dict_keys(td):
         typed_dict_keys(dict) == None
         typed_dict_keys(Other) == None
     """
-    if isinstance(td, _TypedDictMeta):
+    if isinstance(td, (_TypedDictMeta_Mypy, _TypedDictMeta_TE)):
         return td.__annotations__.copy()
     return None
