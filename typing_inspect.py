@@ -203,6 +203,16 @@ def is_classvar(tp):
         return False
 
 
+def is_new_type(tp):
+    """Tests if the type represents a distinct type. Examples::
+
+        is_new_type(int) == False
+        is_new_type(NewType('Age', int)) == True
+        is_new_type(NewType('Scores', List[Dict[str, float]])) == True
+    """
+    return getattr(tp, '__supertype__', None) is not None
+
+
 def get_last_origin(tp):
     """Get the last base of (multiply) subscripted type. Supports generic types,
     Union, Callable, and Tuple. Returns None for unsupported types.
