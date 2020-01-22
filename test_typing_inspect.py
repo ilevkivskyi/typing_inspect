@@ -9,11 +9,19 @@ from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, Callable, Optional, TypeVar, Sequence, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
-    NewType,
 )
 
 from mypy_extensions import TypedDict
 from typing_extensions import Literal
+
+# Does this raise an exception ?
+#      from typing import NewType
+if sys.version_info < (3, 5, 2):
+    WITH_NEWTYPE = False
+else:
+    from typing import NewType
+    WITH_NEWTYPE = True
+
 
 # Does this raise an exception ?
 #      from typing import ClassVar
@@ -213,6 +221,7 @@ class IsUtilityTestCase(TestCase):
         nonsamples = [int, 42, Iterable, List[int], type, T]
         self.sample_test(is_classvar, samples, nonsamples)
 
+    @skipIf(not WITH_NEWTYPE, "NewType is not present")
     def test_new_type(self):
         T = TypeVar('T')
         samples = [
