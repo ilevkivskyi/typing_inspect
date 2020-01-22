@@ -13,6 +13,9 @@ matrix:
     - python: 3.5.1
       dist: trusty
       sudo: true
+    - python: 3.5.0
+      dist: trusty
+      sudo: true
     - python: 3.4
     - python: 2.7
 
