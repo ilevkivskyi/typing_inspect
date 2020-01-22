@@ -46,6 +46,8 @@ Currently provided functions (see functions docstrings for examples of usage):
   Test if ``tp`` is an optional type (either ``type(None)`` or a direct union to it such as in ``Optional[int]``). Nesting and ``TypeVar``s are not unfolded/inspected in this process.
 * ``is_typevar(tp)``:
   Test if ``tp`` represents a type variable.
+* ``is_new_type(tp)``:
+  Test if ``tp`` represents a distinct type.
 * ``is_classvar(tp)``:
   Test if ``tp`` represents a class variable.
 * ``get_origin(tp)``:
