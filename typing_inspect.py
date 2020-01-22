@@ -187,7 +187,7 @@ def is_classvar(tp):
 
 
 def is_new_type(tp):
-    """Tests if the type represents a type alias. Examples::
+    """Tests if the type represents a distinct type. Examples::
 
         is_new_type(int) == False
         is_new_type(NewType('Age', int)) == True
