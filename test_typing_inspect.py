@@ -1,18 +1,93 @@
+import sys
 from typing_inspect import (
     is_generic_type, is_callable_type, is_tuple_type, is_union_type,
     is_optional_type, is_literal_type, is_typevar, is_classvar, get_origin,
-    get_parameters, get_last_args, get_args, get_bound, get_constraints, get_generic_type,
-    get_generic_bases, get_last_origin, typed_dict_keys,
-)
+    get_parameters, get_last_args, get_args, get_bound, get_constraints,
+    get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
+    WITH_LITERAL, LEGACY_TYPING)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
-    Union, ClassVar, Callable, Optional, TypeVar, Sequence, Mapping,
+    Union, Callable, Optional, TypeVar, Sequence, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
 
-import sys
 from mypy_extensions import TypedDict
 from typing_extensions import Literal
+
+# Does this raise an exception ?
+#      from typing import ClassVar
+if sys.version_info < (3, 5, 3):
+    WITH_CLASSVAR = False
+    CLASSVAR_GENERIC = []
+    CLASSVAR_TYPEVAR = []
+else:
+    from typing import ClassVar
+    WITH_CLASSVAR = True
+    CLASSVAR_GENERIC = [ClassVar[List[int]], ClassVar]
+    CLASSVAR_TYPEVAR = [ClassVar[int]]
+
+
+# Does this raise an exception ?
+#     class Foo(Callable[[int], int]):
+#         pass
+if sys.version_info < (3, 5, 3):
+    SUBCLASSABLE_CALLABLES = False
+else:
+    SUBCLASSABLE_CALLABLES = True
+
+
+# Does this raise an exception ?
+#     class MyClass(Tuple[str, int]):
+#         pass
+if sys.version_info < (3, 5, 3):
+    SUBCLASSABLE_TUPLES = False
+else:
+    SUBCLASSABLE_TUPLES = True
+
+
+# Does this raise an exception ?
+#     T = TypeVar('T')
+#     Union[T, str][int]
+if sys.version_info < (3, 5, 3):
+    EXISTING_UNIONS_SUBSCRIPTABLE = False
+else:
+    EXISTING_UNIONS_SUBSCRIPTABLE = True
+
+
+# Does this raise an exception ?
+#     Union[callable, Callable[..., int]]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    UNION_SUPPORTS_BUILTIN_CALLABLE = False
+else:
+    UNION_SUPPORTS_BUILTIN_CALLABLE = True
+
+
+# Does this raise an exception ?
+#   Tuple[T][int]
+#   List[Tuple[T]][int]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    GENERIC_TUPLE_PARAMETRIZABLE = False
+else:
+    GENERIC_TUPLE_PARAMETRIZABLE = True
+
+
+# Does this raise an exception ?
+#    Dict[T, T][int]
+#    Dict[int, Tuple[T, T]][int]
+if sys.version_info[:3] == (3, 5, 3) or sys.version_info[:3] < (3, 5, 2):
+    GENERIC_WITH_MULTIPLE_IDENTICAL_PARAMETERS_CAN_BE_PARAMETRIZED_ONCE = False
+else:
+    GENERIC_WITH_MULTIPLE_IDENTICAL_PARAMETERS_CAN_BE_PARAMETRIZED_ONCE = True
+
+
+# Does this raise an exception ?
+#    Callable[[T], int][int]
+#    Callable[[], T][int]
+if sys.version_info[:3] < (3, 5, 4):
+    CALLABLE_CAN_BE_PARAMETRIZED = False
+else:
+    CALLABLE_CAN_BE_PARAMETRIZED = True
+
 
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
@@ -44,27 +119,30 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
-        nonsamples = [int, Union[int, str], Union[int, T], ClassVar[List[int]],
-                      Callable[..., T], ClassVar, Optional, bytes, list]
+        nonsamples = [int, Union[int, str], Union[int, T], Callable[..., T],
+                      Optional, bytes, list] + CLASSVAR_GENERIC
         self.sample_test(is_generic_type, samples, nonsamples)
 
     def test_callable(self):
         samples = [Callable, Callable[..., int],
                    Callable[[int, int], Iterable[str]]]
-        nonsamples = [int, type, 42, [], List[int],
-                      Union[callable, Callable[..., int]]]
+        nonsamples = [int, type, 42, [], List[int]]
+        if UNION_SUPPORTS_BUILTIN_CALLABLE:
+            nonsamples.append(Union[callable, Callable[..., int]])
         self.sample_test(is_callable_type, samples, nonsamples)
-        class MyClass(Callable[[int], int]):
-            pass
-        self.assertTrue(is_callable_type(MyClass))
+        if SUBCLASSABLE_CALLABLES:
+            class MyClass(Callable[[int], int]):
+                pass
+            self.assertTrue(is_callable_type(MyClass))
 
     def test_tuple(self):
         samples = [Tuple, Tuple[str, int], Tuple[Iterable, ...]]
         nonsamples = [int, tuple, 42, List[int], NamedTuple('N', [('x', int)])]
         self.sample_test(is_tuple_type, samples, nonsamples)
-        class MyClass(Tuple[str, int]):
-            pass
-        self.assertTrue(is_tuple_type(MyClass))
+        if SUBCLASSABLE_TUPLES:
+            class MyClass(Tuple[str, int]):
+                pass
+            self.assertTrue(is_tuple_type(MyClass))
 
     def test_union(self):
         T = TypeVar('T')
@@ -78,15 +156,22 @@ class IsUtilityTestCase(TestCase):
         samples = [type(None),                # none type
                    Optional[int],             # direct union to none type 1
                    Optional[T],               # direct union to none type 2
-                   Optional[T][int],          # direct union to none type 3
                    Union[int, type(None)],    # direct union to none type 4
-                   Union[str, T][type(None)]  # direct union to none type 5
                    ]
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            samples += [Optional[T][int],          # direct union to none type 3
+                        Union[str, T][type(None)]  # direct union to none type 5
+                        ]
+
         # nested unions are supported
-        samples += [Union[str, Optional[int]],      # nested Union 1
-                    Union[T, str][Optional[int]],   # nested Union 2
-                    ]
-        nonsamples = [int, Union[int, int], [], Iterable[Any], T, Union[T, str][int]]
+        samples += [Union[str, Optional[int]]]         # nested Union 1
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            samples += [Union[T, str][Optional[int]]]   # nested Union 2
+
+        nonsamples = [int, Union[int, int], [], Iterable[Any], T]
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            nonsamples += [Union[T, str][int]]
+
         # unfortunately current definition sets these ones as non samples too
         S1 = TypeVar('S1', bound=Optional[int])
         S2 = TypeVar('S2', type(None), str)
@@ -97,6 +182,7 @@ class IsUtilityTestCase(TestCase):
                        ]
         self.sample_test(is_optional_type, samples, nonsamples)
 
+    @skipIf(not WITH_LITERAL, "Literal is not available")
     def test_literal_type(self):
         samples = [
             Literal,
@@ -116,9 +202,10 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         S_co = TypeVar('S_co', covariant=True)
         samples = [T, S_co]
-        nonsamples = [int, Union[T, int], Union[T, S_co], type, ClassVar[int]]
+        nonsamples = [int, Union[T, int], Union[T, S_co], type] + CLASSVAR_TYPEVAR
         self.sample_test(is_typevar, samples, nonsamples)
 
+    @skipIf(not WITH_CLASSVAR, "ClassVar is not present")
     def test_classvar(self):
         T = TypeVar('T')
         samples = [ClassVar, ClassVar[int], ClassVar[List[T]]]
@@ -132,19 +219,26 @@ class GetUtilityTestCase(TestCase):
     def test_last_origin(self):
         T = TypeVar('T')
         self.assertEqual(get_last_origin(int), None)
-        self.assertEqual(get_last_origin(ClassVar[int]), None)
+        if WITH_CLASSVAR:
+            self.assertEqual(get_last_origin(ClassVar[int]), None)
         self.assertEqual(get_last_origin(Generic[T]), Generic)
-        self.assertEqual(get_last_origin(Union[T, int][str]), Union[T, int])
-        self.assertEqual(get_last_origin(List[Tuple[T, T]][int]), List[Tuple[T, T]])
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            self.assertEqual(get_last_origin(Union[T, int][str]), Union[T, int])
+        if GENERIC_TUPLE_PARAMETRIZABLE:
+            tp = List[Tuple[T, T]][int]
+            self.assertEqual(get_last_origin(tp), List[Tuple[T, T]])
         self.assertEqual(get_last_origin(List), List)
 
     def test_origin(self):
         T = TypeVar('T')
         self.assertEqual(get_origin(int), None)
-        self.assertEqual(get_origin(ClassVar[int]), None)
+        if WITH_CLASSVAR:
+            self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
-        self.assertEqual(get_origin(List[Tuple[T, T]][int]), list if NEW_TYPING else List)
+        if GENERIC_TUPLE_PARAMETRIZABLE:
+            tp = List[Tuple[T, T]][int]
+            self.assertEqual(get_origin(tp), list if NEW_TYPING else List)
 
     def test_parameters(self):
         T = TypeVar('T')
@@ -153,10 +247,16 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_parameters(int), ())
         self.assertEqual(get_parameters(Generic), ())
         self.assertEqual(get_parameters(Union), ())
-        self.assertEqual(get_parameters(List[int]), ())
+        if not LEGACY_TYPING:
+            self.assertEqual(get_parameters(List[int]), ())
+        else:
+            # in 3.5.3 a list has no __args__ and instead they are used in __parameters__
+            # in 3.5.1 the behaviour is normal again.
+            pass
         self.assertEqual(get_parameters(Generic[T]), (T,))
         self.assertEqual(get_parameters(Tuple[List[T], List[S_co]]), (T, S_co))
-        self.assertEqual(get_parameters(Union[S_co, Tuple[T, T]][int, U]), (U,))
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            self.assertEqual(get_parameters(Union[S_co, Tuple[T, T]][int, U]), (U,))
         self.assertEqual(get_parameters(Mapping[T, Tuple[S_co, T]]), (T, S_co))
 
     @skipIf(NEW_TYPING, "Not supported in Python 3.7")
@@ -165,39 +265,59 @@ class GetUtilityTestCase(TestCase):
         S = TypeVar('S')
         self.assertEqual(get_last_args(int), ())
         self.assertEqual(get_last_args(Union), ())
-        self.assertEqual(get_last_args(ClassVar[int]), (int,))
+        if WITH_CLASSVAR:
+            self.assertEqual(get_last_args(ClassVar[int]), (int,))
         self.assertEqual(get_last_args(Union[T, int]), (T, int))
-        self.assertEqual(get_last_args(Iterable[Tuple[T, S]][int, T]), (int, T))
-        self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
-        self.assertEqual(get_last_args(Callable[[], int]), (int,))
+        self.assertEqual(get_last_args(Union[str, int]), (str, int))
+        self.assertEqual(get_last_args(Tuple[T, int]), (T, int))
+        self.assertEqual(get_last_args(Tuple[str, int]), (str, int))
+        self.assertEqual(get_last_args(Generic[T]), (T, ))
+        if GENERIC_TUPLE_PARAMETRIZABLE:
+            tp = Iterable[Tuple[T, S]][int, T]
+            self.assertEqual(get_last_args(tp), (int, T))
+        if LEGACY_TYPING:
+            self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S))
+            self.assertEqual(get_last_args(Callable[[], int]), ())
+        else:
+            self.assertEqual(get_last_args(Callable[[T, S], int]), (T, S, int))
+            self.assertEqual(get_last_args(Callable[[], int]), (int,))
 
     @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_args(self):
-        T = TypeVar('T')
-        self.assertEqual(get_args(Union[int, Tuple[T, int]][str]),
-                         (int, (Tuple, str, int)))
-        self.assertEqual(get_args(Union[int, Union[T, int], str][int]),
-                         (int, str))
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            T = TypeVar('T')
+            self.assertEqual(get_args(Union[int, Tuple[T, int]][str]),
+                             (int, (Tuple, str, int)))
+            self.assertEqual(get_args(Union[int, Union[T, int], str][int]),
+                             (int, str))
         self.assertEqual(get_args(int), ())
 
     def test_args_evaluated(self):
         T = TypeVar('T')
-        self.assertEqual(get_args(Union[int, Tuple[T, int]][str], evaluate=True),
-                         (int, Tuple[str, int]))
-        self.assertEqual(get_args(Dict[int, Tuple[T, T]][Optional[int]], evaluate=True),
-                         (int, Tuple[Optional[int], Optional[int]]))
-        self.assertEqual(get_args(Callable[[], T][int], evaluate=True), ([], int,))
+        if EXISTING_UNIONS_SUBSCRIPTABLE:
+            self.assertEqual(get_args(Union[int, Tuple[T, int]][str], evaluate=True),
+                             (int, Tuple[str, int]))
+        if GENERIC_WITH_MULTIPLE_IDENTICAL_PARAMETERS_CAN_BE_PARAMETRIZED_ONCE:
+            tp = Dict[int, Tuple[T, T]][Optional[int]]
+            self.assertEqual(get_args(tp, evaluate=True),
+                             (int, Tuple[Optional[int], Optional[int]]))
+        if CALLABLE_CAN_BE_PARAMETRIZED:
+            tp = Callable[[], T][int]
+            self.assertEqual(get_args(tp, evaluate=True), ([], int,))
+
         self.assertEqual(get_args(Union[int, Callable[[Tuple[T, ...]], str]], evaluate=True),
                          (int, Callable[[Tuple[T, ...]], str]))
 
         # ClassVar special-casing
-        self.assertEqual(get_args(ClassVar, evaluate=True), ())
-        self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
+        if WITH_CLASSVAR:
+            self.assertEqual(get_args(ClassVar, evaluate=True), ())
+            self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
 
         # Literal special-casing
-        self.assertEqual(get_args(Literal, evaluate=True), ())
-        self.assertEqual(get_args(Literal["value"], evaluate=True), ("value",))
-        self.assertEqual(get_args(Literal[1, 2, 3], evaluate=True), (1, 2, 3))
+        if WITH_LITERAL:
+            self.assertEqual(get_args(Literal, evaluate=True), ())
+            self.assertEqual(get_args(Literal["value"], evaluate=True), ("value",))
+            self.assertEqual(get_args(Literal[1, 2, 3], evaluate=True), (1, 2, 3))
 
     def test_bound(self):
         T = TypeVar('T')
@@ -215,8 +335,13 @@ class GetUtilityTestCase(TestCase):
         T = TypeVar('T')
         class Node(Generic[T]): pass
         self.assertIs(get_generic_type(Node()), Node)
-        self.assertIs(get_generic_type(Node[int]()), Node[int])
-        self.assertIs(get_generic_type(Node[T]()), Node[T],)
+        if not LEGACY_TYPING:
+            self.assertIs(get_generic_type(Node[int]()), Node[int])
+            self.assertIs(get_generic_type(Node[T]()), Node[T],)
+        else:
+            # Node[int]() was creating an object of NEW type Node[~T]
+            # and Node[T]() was creating an object of NEW type Node[~T]
+            pass
         self.assertIs(get_generic_type(1), int)
 
     def test_generic_bases(self):
