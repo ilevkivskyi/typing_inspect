@@ -213,6 +213,19 @@ def is_new_type(tp):
     return getattr(tp, '__supertype__', None) is not None
 
 
+def is_forward_ref(tp):
+    """Tests if the type is a :class:`typing.ForwardRef`. Examples::
+
+        u = Union["Milk", Way]
+        args = get_args(u)
+        is_forward_ref(args[0]) == True
+        is_forward_ref(args[1]) == False
+    """
+    if not NEW_TYPING:
+        return isinstance(tp, _ForwardRef)
+    return isinstance(tp, ForwardRef)
+
+
 def get_last_origin(tp):
     """Get the last base of (multiply) subscripted type. Supports generic types,
     Union, Callable, and Tuple. Returns None for unsupported types.
@@ -537,14 +550,6 @@ def typed_dict_keys(td):
     if isinstance(td, _TypedDictMeta):
         return td.__annotations__.copy()
     return None
-
-def is_forward_ref(tp):
-    """
-    Returns True if ``tp`` is a :class:`typing.ForwardRef` or False otherwise.
-    """
-    if not NEW_TYPING:
-        return isinstance(tp, _ForwardRef)
-    return isinstance(tp, ForwardRef)
 
 
 # A few functions backported and adapted for the LEGACY_TYPING context, and used above
