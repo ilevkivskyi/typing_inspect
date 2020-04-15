@@ -20,12 +20,12 @@ LEGACY_TYPING = False
 
 if NEW_TYPING:
     from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
     )
     from typing_extensions import Literal
 else:
     from typing import (
-        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta,
+        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
     )
     try:
         from typing import _Union, _ClassVar
@@ -537,6 +537,14 @@ def typed_dict_keys(td):
     if isinstance(td, _TypedDictMeta):
         return td.__annotations__.copy()
     return None
+
+def is_forward_ref(tp):
+    """
+    Returns True if ``tp`` is a :class:`typing.ForwardRef` or False otherwise.
+    """
+    if not NEW_TYPING:
+        return isinstance(tp, _ForwardRef)
+    return isinstance(tp, ForwardRef)
 
 
 # A few functions backported and adapted for the LEGACY_TYPING context, and used above
