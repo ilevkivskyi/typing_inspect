@@ -4,7 +4,7 @@ from typing_inspect import (
     is_optional_type, is_literal_type, is_typevar, is_classvar, is_forward_ref,
     get_origin, get_parameters, get_last_args, get_args, get_bound, get_constraints,
     get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
-    WITH_LITERAL, LEGACY_TYPING)
+    get_forward_arg, WITH_LITERAL, LEGACY_TYPING)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, Callable, Optional, TypeVar, Sequence, AnyStr, Mapping,
@@ -405,6 +405,17 @@ class GetUtilityTestCase(TestCase):
         self.assertIs(typed_dict_keys(dict), None)
         self.assertIs(typed_dict_keys(Other), None)
         self.assertIsNot(typed_dict_keys(TD), TD.__annotations__)
+
+    @skipIf(
+        (3, 5, 2) > sys.version_info[:3] >= (3, 5, 0),
+        "get_args doesn't work in Python 3.5.0 and 3.5.1 for type"
+        " List and ForwardRef arg"
+    )
+    def test_get_forward_arg(self):
+        tp = List["FRef"]
+        fr = get_args(tp)[0]
+        self.assertEqual(get_forward_arg(fr), "FRef")
+        self.assertEqual(get_forward_arg(tp), None)
 
 
 if __name__ == '__main__':

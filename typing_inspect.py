@@ -552,6 +552,19 @@ def typed_dict_keys(td):
     return None
 
 
+def get_forward_arg(fr):
+    """
+    If fr is a ForwardRef, return the string representation of the forward reference.
+    Otherwise return None. Examples::
+
+        tp = List["FRef"]
+        fr = get_args(tp)[0]
+        get_forward_arg(fr) == "FRef"
+        get_forward_arg(tp) == None
+    """
+    return fr.__forward_arg__ if is_forward_ref(fr) else None
+
+
 # A few functions backported and adapted for the LEGACY_TYPING context, and used above
 
 def _replace_arg(arg, tvars, args):
