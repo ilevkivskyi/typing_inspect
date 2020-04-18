@@ -20,12 +20,12 @@ LEGACY_TYPING = False
 
 if NEW_TYPING:
     from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
     )
     from typing_extensions import Literal
 else:
     from typing import (
-        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta,
+        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
     )
     try:
         from typing import _Union, _ClassVar
@@ -211,6 +211,19 @@ def is_new_type(tp):
         is_new_type(NewType('Scores', List[Dict[str, float]])) == True
     """
     return getattr(tp, '__supertype__', None) is not None
+
+
+def is_forward_ref(tp):
+    """Tests if the type is a :class:`typing.ForwardRef`. Examples::
+
+        u = Union["Milk", Way]
+        args = get_args(u)
+        is_forward_ref(args[0]) == True
+        is_forward_ref(args[1]) == False
+    """
+    if not NEW_TYPING:
+        return isinstance(tp, _ForwardRef)
+    return isinstance(tp, ForwardRef)
 
 
 def get_last_origin(tp):
@@ -537,6 +550,19 @@ def typed_dict_keys(td):
     if isinstance(td, _TypedDictMeta):
         return td.__annotations__.copy()
     return None
+
+
+def get_forward_arg(fr):
+    """
+    If fr is a ForwardRef, return the string representation of the forward reference.
+    Otherwise return None. Examples::
+
+        tp = List["FRef"]
+        fr = get_args(tp)[0]
+        get_forward_arg(fr) == "FRef"
+        get_forward_arg(tp) == None
+    """
+    return fr.__forward_arg__ if is_forward_ref(fr) else None
 
 
 # A few functions backported and adapted for the LEGACY_TYPING context, and used above
