@@ -248,7 +248,7 @@ class IsUtilityTestCase(TestCase):
         nonsamples = []
         for tp in (
             Union["FowardReference", Dict[str, List[int]]],
-            Union["FR", Union[int, str]],
+            Union["FR", List["FR"]],
             Optional["Fref"],
             Union["fRef", int],
             Union["fR", AnyStr],
