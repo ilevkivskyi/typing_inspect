@@ -247,11 +247,10 @@ class IsUtilityTestCase(TestCase):
         samples = []
         nonsamples = []
         for tp in (
-            Union["FowardReference", Dict],
-            Union["FR", List],
+            Union["FowardReference", Dict[str, List[int]]],
+            Union["FR", Union[int, str]],
             Optional["Fref"],
             Union["fRef", int],
-            Union["fr", str],
             Union["fR", AnyStr],
         ):
             fr, not_fr = get_args(tp)
