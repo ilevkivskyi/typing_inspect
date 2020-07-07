@@ -102,7 +102,10 @@ else:
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
 PY36_TESTS = """
-class TD(TypedDict):
+class TDM(METypedDict):
+    x: int
+    y: int
+class TDE(TETypedDict):
     x: int
     y: int
 class Other(dict):
@@ -111,20 +114,8 @@ class Other(dict):
 """
 
 PY36 = sys.version_info[:3] >= (3, 6, 0)
-if PY36:    
-
-    class TDM(METypedDict):
-        x: int
-        y: int
-
-    class TDE(TETypedDict):
-        x: int
-        y: int
-
-    class Other(dict):
-        x: int
-        y: int
-
+if PY36:
+    exec(PY36_TESTS)
 else:
     TDM = TDE = Other = object  # for linters
 
