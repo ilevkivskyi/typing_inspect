@@ -421,7 +421,7 @@ class GetUtilityTestCase(TestCase):
     @skipUnless(PY36, "Python 3.6 required")
     def test_typed_dict_typing_extension(self):
         TDOld = TETypedDict("TDOld", {'x': int, 'y': int})
-        Mself.assertEqual(typed_dict_keys(TDE), {'x': int, 'y': int})
+        self.assertEqual(typed_dict_keys(TDE), {'x': int, 'y': int})
         self.assertEqual(typed_dict_keys(TDOld), {'x': int, 'y': int})
         self.assertIs(typed_dict_keys(dict), None)
         self.assertIs(typed_dict_keys(Other), None)
