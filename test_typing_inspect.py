@@ -418,6 +418,18 @@ class GetUtilityTestCase(TestCase):
         self.assertIs(typed_dict_keys(Other), None)
         self.assertIsNot(typed_dict_keys(TDM), TDE.__annotations__)
 
+    @skipIf(
+        (3, 5, 2) > sys.version_info[:3] >= (3, 5, 0),
+        "get_args doesn't work in Python 3.5.0 and 3.5.1 for type"
+        " List and ForwardRef arg"
+    )
+    def test_get_forward_arg(self):
+        tp = List["FRef"]
+        fr = get_args(tp)[0]
+        self.assertEqual(get_forward_arg(fr), "FRef")
+        self.assertEqual(get_forward_arg(tp), None)
+        self.assertIsNot(typed_dict_keys(TDM), TDE.__annotations__)
+
 
 if __name__ == '__main__':
     main()
