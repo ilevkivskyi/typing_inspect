@@ -416,7 +416,7 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(typed_dict_keys(TDOld), {'x': int, 'y': int})
         self.assertIs(typed_dict_keys(dict), None)
         self.assertIs(typed_dict_keys(Other), None)
-        self.assertIsNot(typed_dict_keys(TDM), TDE.__annotations__)
+        self.assertIsNot(typed_dict_keys(TDE), TDE.__annotations__)
 
     @skipIf(
         (3, 5, 2) > sys.version_info[:3] >= (3, 5, 0),
