@@ -15,20 +15,34 @@ NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
     import collections.abc
 
+WITH_LITERAL = True
+WITH_CLASSVAR = True
+LEGACY_TYPING = False
+
 if NEW_TYPING:
     from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
     )
     from typing_extensions import Literal
 else:
     from typing import (
-        Callable, CallableMeta, Union, _Union, TupleMeta, TypeVar,
-        _ClassVar, GenericMeta,
+        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
     )
+    try:
+        from typing import _Union, _ClassVar
+    except ImportError:
+        # support for very old typing module <=3.5.3
+        _Union = type(Union)
+        WITH_CLASSVAR = False
+        LEGACY_TYPING = True
+
     try:  # python 3.6
         from typing_extensions import _Literal
     except ImportError:  # python 2.7
-        from typing import _Literal
+        try:
+            from typing import _Literal
+        except ImportError:
+            WITH_LITERAL = False
 
 
 def _gorg(cls):
@@ -159,7 +173,7 @@ def is_literal_type(tp):
     if NEW_TYPING:
         return (tp is Literal or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is Literal)
-    return type(tp) is _Literal
+    return WITH_LITERAL and type(tp) is _Literal
 
 
 def is_typevar(tp):
@@ -184,7 +198,33 @@ def is_classvar(tp):
     if NEW_TYPING:
         return (tp is ClassVar or
                 isinstance(tp, _GenericAlias) and tp.__origin__ is ClassVar)
-    return type(tp) is _ClassVar
+    elif WITH_CLASSVAR:
+        return type(tp) is _ClassVar
+    else:
+        return False
+
+
+def is_new_type(tp):
+    """Tests if the type represents a distinct type. Examples::
+
+        is_new_type(int) == False
+        is_new_type(NewType('Age', int)) == True
+        is_new_type(NewType('Scores', List[Dict[str, float]])) == True
+    """
+    return getattr(tp, '__supertype__', None) is not None
+
+
+def is_forward_ref(tp):
+    """Tests if the type is a :class:`typing.ForwardRef`. Examples::
+
+        u = Union["Milk", Way]
+        args = get_args(u)
+        is_forward_ref(args[0]) == True
+        is_forward_ref(args[1]) == False
+    """
+    if not NEW_TYPING:
+        return isinstance(tp, _ForwardRef)
+    return isinstance(tp, ForwardRef)
 
 
 def get_last_origin(tp):
@@ -232,6 +272,8 @@ def get_origin(tp):
         return _gorg(tp)
     if is_union_type(tp):
         return Union
+    if is_tuple_type(tp):
+        return Tuple
 
     return None
 
@@ -251,18 +293,54 @@ def get_parameters(tp):
         get_parameters(Union[S_co, Tuple[T, T]][int, U]) == (U,)
         get_parameters(Mapping[T, Tuple[S_co, T]]) == (T, S_co)
     """
-    if NEW_TYPING:
+    if LEGACY_TYPING:
+        # python <= 3.5.2
+        if is_union_type(tp):
+            params = []
+            for arg in (tp.__union_params__ if tp.__union_params__ is not None else ()):
+                params += get_parameters(arg)
+            return tuple(params)
+        elif is_tuple_type(tp):
+            params = []
+            for arg in (tp.__tuple_params__ if tp.__tuple_params__ is not None else ()):
+                params += get_parameters(arg)
+            return tuple(params)
+        elif is_generic_type(tp):
+            params = []
+            base_params = tp.__parameters__
+            if base_params is None:
+                return ()
+            for bp_ in base_params:
+                for bp in (get_args(bp_) if is_tuple_type(bp_) else (bp_,)):
+                    if _has_type_var(bp) and not isinstance(bp, TypeVar):
+                        raise TypeError(
+                            "Cannot inherit from a generic class "
+                            "parameterized with "
+                            "non-type-variable %s" % bp)
+                    if params is None:
+                        params = []
+                    if bp not in params:
+                        params.append(bp)
+            if params is not None:
+                return tuple(params)
+            else:
+                return ()
+        else:
+            return ()
+    elif NEW_TYPING:
         if (isinstance(tp, _GenericAlias) or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 tp is not Generic):
             return tp.__parameters__
-        return ()
-    if (
+        else:
+            return ()
+    elif (
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
     ):
         return tp.__parameters__ if tp.__parameters__ is not None else ()
-    return ()
+    else:
+        return ()
 
 
 def get_last_args(tp):
@@ -280,14 +358,32 @@ def get_last_args(tp):
     if NEW_TYPING:
         raise ValueError('This function is only supported in Python 3.6,'
                          ' use get_args instead')
-    if is_classvar(tp):
+    elif is_classvar(tp):
         return (tp.__type__,) if tp.__type__ is not None else ()
-    if (
-        is_generic_type(tp) or is_union_type(tp) or
-        is_callable_type(tp) or is_tuple_type(tp)
-    ):
+    elif is_generic_type(tp):
+        try:
+            if tp.__args__ is not None and len(tp.__args__) > 0:
+                return tp.__args__
+        except AttributeError:
+            # python 3.5.1
+            pass
+        return tp.__parameters__ if tp.__parameters__ is not None else ()
+    elif is_union_type(tp):
+        try:
+            return tp.__args__ if tp.__args__ is not None else ()
+        except AttributeError:
+            # python 3.5.2
+            return tp.__union_params__ if tp.__union_params__ is not None else ()
+    elif is_callable_type(tp):
         return tp.__args__ if tp.__args__ is not None else ()
-    return ()
+    elif is_tuple_type(tp):
+        try:
+            return tp.__args__ if tp.__args__ is not None else ()
+        except AttributeError:
+            # python 3.5.2
+            return tp.__tuple_params__ if tp.__tuple_params__ is not None else ()
+    else:
+        return ()
 
 
 def _eval_args(args):
@@ -331,7 +427,7 @@ def get_args(tp, evaluate=None):
     """
     if NEW_TYPING:
         if evaluate is not None and not evaluate:
-            raise ValueError('evaluate can only be True in Python 3.7')
+            raise ValueError('evaluate can only be True in Python >= 3.7')
         if isinstance(tp, _GenericAlias):
             res = tp.__args__
             if get_origin(tp) is collections.abc.Callable and res[0] is not Ellipsis:
@@ -346,7 +442,23 @@ def get_args(tp, evaluate=None):
         is_generic_type(tp) or is_union_type(tp) or
         is_callable_type(tp) or is_tuple_type(tp)
     ):
-        tree = tp._subs_tree()
+        try:
+            tree = tp._subs_tree()
+        except AttributeError:
+            # Old python typing module <= 3.5.3
+            if is_union_type(tp):
+                # backport of union's subs_tree
+                tree = _union_subs_tree(tp)
+            elif is_generic_type(tp):
+                # backport of genericmeta's subs_tree
+                tree = _generic_subs_tree(tp)
+            elif is_tuple_type(tp):
+                # ad-hoc (inspired by union)
+                tree = _tuple_subs_tree(tp)
+            else:
+                # tree = _subs_tree(tp)
+                return ()
+
         if isinstance(tree, tuple) and len(tree) > 1:
             if not evaluate:
                 return tree[1:]
@@ -354,11 +466,12 @@ def get_args(tp, evaluate=None):
             if get_origin(tp) is Callable and res[0] is not Ellipsis:
                 res = (list(res[:-1]), res[-1])
             return res
+
     return ()
 
 
 def get_bound(tp):
-    """Return the bound to a `TypeVar` if any.
+    """Return the type bound to a `TypeVar` if any.
 
     It the type is not a `TypeVar`, a `TypeError` is raised.
     Examples::
@@ -414,8 +527,10 @@ def get_generic_bases(tp):
         MyClass.__bases__ == (List, Mapping)
         get_generic_bases(MyClass) == (List[int], Mapping[str, List[int]])
     """
-
-    return getattr(tp, '__orig_bases__', ())
+    if LEGACY_TYPING:
+        return tuple(t for t in tp.__bases__ if isinstance(t, GenericMeta))
+    else:
+        return getattr(tp, '__orig_bases__', ())
 
 
 def typed_dict_keys(td):
@@ -436,3 +551,197 @@ def typed_dict_keys(td):
     if isinstance(td, (_TypedDictMeta_Mypy, _TypedDictMeta_TE)):
         return td.__annotations__.copy()
     return None
+
+
+def get_forward_arg(fr):
+    """
+    If fr is a ForwardRef, return the string representation of the forward reference.
+    Otherwise return None. Examples::
+
+        tp = List["FRef"]
+        fr = get_args(tp)[0]
+        get_forward_arg(fr) == "FRef"
+        get_forward_arg(tp) == None
+    """
+    return fr.__forward_arg__ if is_forward_ref(fr) else None
+
+
+# A few functions backported and adapted for the LEGACY_TYPING context, and used above
+
+def _replace_arg(arg, tvars, args):
+    """backport of _replace_arg"""
+    if tvars is None:
+        tvars = []
+    # if hasattr(arg, '_subs_tree') and isinstance(arg, (GenericMeta, _TypingBase)):
+    #     return arg._subs_tree(tvars, args)
+    if is_union_type(arg):
+        return _union_subs_tree(arg, tvars, args)
+    if is_tuple_type(arg):
+        return _tuple_subs_tree(arg, tvars, args)
+    if is_generic_type(arg):
+        return _generic_subs_tree(arg, tvars, args)
+    if isinstance(arg, TypeVar):
+        for i, tvar in enumerate(tvars):
+            if arg == tvar:
+                return args[i]
+    return arg
+
+
+def _remove_dups_flatten(parameters):
+    """backport of _remove_dups_flatten"""
+
+    # Flatten out Union[Union[...], ...].
+    params = []
+    for p in parameters:
+        if isinstance(p, _Union):  # and p.__origin__ is Union:
+            params.extend(p.__union_params__)  # p.__args__)
+        elif isinstance(p, tuple) and len(p) > 0 and p[0] is Union:
+            params.extend(p[1:])
+        else:
+            params.append(p)
+    # Weed out strict duplicates, preserving the first of each occurrence.
+    all_params = set(params)
+    if len(all_params) < len(params):
+        new_params = []
+        for t in params:
+            if t in all_params:
+                new_params.append(t)
+                all_params.remove(t)
+        params = new_params
+        assert not all_params, all_params
+    # Weed out subclasses.
+    # E.g. Union[int, Employee, Manager] == Union[int, Employee].
+    # If object is present it will be sole survivor among proper classes.
+    # Never discard type variables.
+    # (In particular, Union[str, AnyStr] != AnyStr.)
+    all_params = set(params)
+    for t1 in params:
+        if not isinstance(t1, type):
+            continue
+        if any(isinstance(t2, type) and issubclass(t1, t2)
+               for t2 in all_params - {t1}
+               if (not (isinstance(t2, GenericMeta) and
+                        get_origin(t2) is not None) and
+                   not isinstance(t2, TypeVar))):
+            all_params.remove(t1)
+    return tuple(t for t in params if t in all_params)
+
+
+def _subs_tree(cls, tvars=None, args=None):
+    """backport of typing._subs_tree, adapted for legacy versions """
+    def _get_origin(cls):
+        try:
+            return cls.__origin__
+        except AttributeError:
+            return None
+
+    current = _get_origin(cls)
+    if current is None:
+        if not is_union_type(cls) and not is_tuple_type(cls):
+            return cls
+
+    # Make of chain of origins (i.e. cls -> cls.__origin__)
+    orig_chain = []
+    while _get_origin(current) is not None:
+        orig_chain.append(current)
+        current = _get_origin(current)
+
+    # Replace type variables in __args__ if asked ...
+    tree_args = []
+
+    def _get_args(cls):
+        if is_union_type(cls):
+            cls_args = cls.__union_params__
+        elif is_tuple_type(cls):
+            cls_args = cls.__tuple_params__
+        else:
+            try:
+                cls_args = cls.__args__
+            except AttributeError:
+                cls_args = ()
+        return cls_args if cls_args is not None else ()
+
+    for arg in _get_args(cls):
+        tree_args.append(_replace_arg(arg, tvars, args))
+    # ... then continue replacing down the origin chain.
+    for ocls in orig_chain:
+        new_tree_args = []
+        for arg in _get_args(ocls):
+            new_tree_args.append(_replace_arg(arg, get_parameters(ocls), tree_args))
+        tree_args = new_tree_args
+    return tree_args
+
+
+def _union_subs_tree(tp, tvars=None, args=None):
+    """ backport of Union._subs_tree """
+    if tp is Union:
+        return Union  # Nothing to substitute
+    tree_args = _subs_tree(tp, tvars, args)
+    # tree_args = tp.__union_params__ if tp.__union_params__ is not None else ()
+    tree_args = _remove_dups_flatten(tree_args)
+    if len(tree_args) == 1:
+        return tree_args[0]  # Union of a single type is that type
+    return (Union,) + tree_args
+
+
+def _generic_subs_tree(tp, tvars=None, args=None):
+    """ backport of GenericMeta._subs_tree """
+    if tp.__origin__ is None:
+        return tp
+    tree_args = _subs_tree(tp, tvars, args)
+    return (_gorg(tp),) + tuple(tree_args)
+
+
+def _tuple_subs_tree(tp, tvars=None, args=None):
+    """ ad-hoc function (inspired by union) for legacy typing """
+    if tp is Tuple:
+        return Tuple  # Nothing to substitute
+    tree_args = _subs_tree(tp, tvars, args)
+    return (Tuple,) + tuple(tree_args)
+
+
+def _has_type_var(t):
+    if t is None:
+        return False
+    elif is_union_type(t):
+        return _union_has_type_var(t)
+    elif is_tuple_type(t):
+        return _tuple_has_type_var(t)
+    elif is_generic_type(t):
+        return _generic_has_type_var(t)
+    elif is_callable_type(t):
+        return _callable_has_type_var(t)
+    else:
+        return False
+
+
+def _union_has_type_var(tp):
+    if tp.__union_params__:
+        for t in tp.__union_params__:
+            if _has_type_var(t):
+                return True
+    return False
+
+
+def _tuple_has_type_var(tp):
+    if tp.__tuple_params__:
+        for t in tp.__tuple_params__:
+            if _has_type_var(t):
+                return True
+    return False
+
+
+def _callable_has_type_var(tp):
+    if tp.__args__:
+        for t in tp.__args__:
+            if _has_type_var(t):
+                return True
+    return _has_type_var(tp.__result__)
+
+
+def _generic_has_type_var(tp):
+    if tp.__parameters__:
+        for t in tp.__parameters__:
+            if _has_type_var(t):
+                return True
+    return False
