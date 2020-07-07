@@ -428,7 +428,8 @@ class GetUtilityTestCase(TestCase):
         fr = get_args(tp)[0]
         self.assertEqual(get_forward_arg(fr), "FRef")
         self.assertEqual(get_forward_arg(tp), None)
-        self.assertIsNot(typed_dict_keys(TDM), TDE.__annotations__)
+        self.assertIsNot(typed_dict_keys(TDM), TDM.__annotations__)
+        self.assertIsNot(typed_dict_keys(TDE), TDE.__annotations__)
 
 
 if __name__ == '__main__':
