@@ -11,7 +11,8 @@ from typing import (
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
 
-from mypy_extensions import TypedDict
+from mypy_extensions import TypedDict as METypedDict
+from typing_extensions import TypedDict as TETypedDict
 from typing_extensions import Literal
 
 # Does this raise an exception ?
@@ -101,7 +102,10 @@ else:
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
 PY36_TESTS = """
-class TD(TypedDict):
+class TDM(METypedDict):
+    x: int
+    y: int
+class TDE(TETypedDict):
     x: int
     y: int
 class Other(dict):
@@ -113,7 +117,7 @@ PY36 = sys.version_info[:3] >= (3, 6, 0)
 if PY36:
     exec(PY36_TESTS)
 else:
-    TD = Other = object  # for linters
+    TDM = TDE = Other = object  # for linters
 
 
 class IsUtilityTestCase(TestCase):
@@ -397,13 +401,22 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_generic_bases(int), ())
 
     @skipUnless(PY36, "Python 3.6 required")
-    def test_typed_dict(self):
-        TDOld = TypedDict("TDOld", {'x': int, 'y': int})
-        self.assertEqual(typed_dict_keys(TD), {'x': int, 'y': int})
+    def test_typed_dict_mypy_extension(self):
+        TDOld = METypedDict("TDOld", {'x': int, 'y': int})
+        self.assertEqual(typed_dict_keys(TDM), {'x': int, 'y': int})
         self.assertEqual(typed_dict_keys(TDOld), {'x': int, 'y': int})
         self.assertIs(typed_dict_keys(dict), None)
         self.assertIs(typed_dict_keys(Other), None)
-        self.assertIsNot(typed_dict_keys(TD), TD.__annotations__)
+        self.assertIsNot(typed_dict_keys(TDM), TDM.__annotations__)
+
+    @skipUnless(PY36, "Python 3.6 required")
+    def test_typed_dict_typing_extension(self):
+        TDOld = TETypedDict("TDOld", {'x': int, 'y': int})
+        self.assertEqual(typed_dict_keys(TDE), {'x': int, 'y': int})
+        self.assertEqual(typed_dict_keys(TDOld), {'x': int, 'y': int})
+        self.assertIs(typed_dict_keys(dict), None)
+        self.assertIs(typed_dict_keys(Other), None)
+        self.assertIsNot(typed_dict_keys(TDE), TDE.__annotations__)
 
     @skipIf(
         (3, 5, 2) > sys.version_info[:3] >= (3, 5, 0),
