@@ -1,10 +1,10 @@
 import sys
 from typing_inspect import (
     is_generic_type, is_callable_type, is_new_type, is_tuple_type, is_union_type,
-    is_optional_type, is_literal_type, is_typevar, is_classvar, is_forward_ref,
-    get_origin, get_parameters, get_last_args, get_args, get_bound, get_constraints,
-    get_generic_type, get_generic_bases, get_last_origin, typed_dict_keys,
-    get_forward_arg, WITH_LITERAL, LEGACY_TYPING)
+    is_optional_type, is_final_type, is_literal_type, is_typevar, is_classvar,
+    is_forward_ref, get_origin, get_parameters, get_last_args, get_args, get_bound,
+    get_constraints, get_generic_type, get_generic_bases, get_last_origin,
+    typed_dict_keys, get_forward_arg, WITH_FINAL, WITH_LITERAL, LEGACY_TYPING)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, Callable, Optional, TypeVar, Sequence, AnyStr, Mapping,
@@ -13,6 +13,7 @@ from typing import (
 
 from mypy_extensions import TypedDict as METypedDict
 from typing_extensions import TypedDict as TETypedDict
+from typing_extensions import Final
 from typing_extensions import Literal
 
 # Does this raise an exception ?
@@ -195,6 +196,22 @@ class IsUtilityTestCase(TestCase):
                        ]
         self.sample_test(is_optional_type, samples, nonsamples)
 
+    @skipIf(not WITH_FINAL, "Final is not available")
+    def test_final_type(self):
+        samples = [
+            Final,
+            Final[int],
+        ]
+        nonsamples = [
+            "v",
+            1,
+            (1, 2, 3),
+            int,
+            str,
+            Union["u", "v"],
+        ]
+        self.sample_test(is_final_type, samples, nonsamples)
+
     @skipIf(not WITH_LITERAL, "Literal is not available")
     def test_literal_type(self):
         samples = [
@@ -362,6 +379,11 @@ class GetUtilityTestCase(TestCase):
         if WITH_CLASSVAR:
             self.assertEqual(get_args(ClassVar, evaluate=True), ())
             self.assertEqual(get_args(ClassVar[int], evaluate=True), (int,))
+
+        # Final special-casing
+        if WITH_FINAL:
+            self.assertEqual(get_args(Final, evaluate=True), ())
+            self.assertEqual(get_args(Final[int], evaluate=True), (int,))
 
         # Literal special-casing
         if WITH_LITERAL:
