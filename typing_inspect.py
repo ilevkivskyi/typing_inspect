@@ -21,7 +21,7 @@ LEGACY_TYPING = False
 
 if NEW_TYPING:
     from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, _SpecialGenericAlias, ForwardRef
     )
     from typing_extensions import Literal
 else:
@@ -75,7 +75,7 @@ def is_generic_type(tp):
     """
     if NEW_TYPING:
         return (isinstance(tp, type) and issubclass(tp, Generic) or
-                isinstance(tp, _GenericAlias) and
+                (isinstance(tp, _GenericAlias) or isinstance(tp, _SpecialGenericAlias)) and
                 tp.__origin__ not in (Union, tuple, ClassVar, collections.abc.Callable))
     return (isinstance(tp, GenericMeta) and not
             isinstance(tp, (CallableMeta, TupleMeta)))
