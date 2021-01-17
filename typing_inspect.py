@@ -9,7 +9,12 @@ Example usage::
 
 import sys
 from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
-from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
+if sys.version_info[:3] >= (3, 5, 0) and sys.version_info[:3] < (3, 9, 0):
+    from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
+else:
+    # typing_extensions.TypedDict is a re-export from typing.
+    from typing import TypedDict
+    _TypedDictMeta_TE = type(TypedDict)
 
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
