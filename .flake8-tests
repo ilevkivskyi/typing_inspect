@@ -6,6 +6,7 @@ ignore =
   E701,
   E704,
   F811,
+  F821,
   B3,
   DW12
 exclude =
