@@ -116,8 +116,6 @@ class Other(dict):
 PY36 = sys.version_info[:3] >= (3, 6, 0)
 if PY36:
     exec(PY36_TESTS)
-else:
-    TDM = TDE = Other = object  # for linters
 
 
 class IsUtilityTestCase(TestCase):
