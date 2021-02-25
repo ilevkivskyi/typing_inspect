@@ -1,6 +1,6 @@
 flake8; python_version >= '3.6'
 flake8-bugbear; python_version >= '3.6'
 pytest>=2.8; python_version >= '3.3'
-typing >= 3.7.4
+typing >= 3.7.4; python_version < '3.5'
 mypy_extensions >= 0.3.0
 typing_extensions >= 3.7.4
