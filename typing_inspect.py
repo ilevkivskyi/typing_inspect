@@ -20,6 +20,7 @@ NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
     import collections.abc
 
+WITH_FINAL = True
 WITH_LITERAL = True
 WITH_CLASSVAR = True
 LEGACY_TYPING = False
@@ -28,7 +29,7 @@ if NEW_TYPING:
     from typing import (
         Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
     )
-    from typing_extensions import Literal
+    from typing_extensions import Final, Literal
 else:
     from typing import (
         Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
@@ -40,6 +41,14 @@ else:
         _Union = type(Union)
         WITH_CLASSVAR = False
         LEGACY_TYPING = True
+
+    try:  # python 3.6
+        from typing_extensions import _Final
+    except ImportError:  # python 2.7
+        try:
+            from typing import _Final
+        except ImportError:
+            WITH_FINAL = False
 
     try:  # python 3.6
         from typing_extensions import _Literal
@@ -158,6 +167,19 @@ def is_optional_type(tp):
         return any(is_optional_type(tt) for tt in get_args(tp, evaluate=True))
     else:
         return False
+
+
+def is_final_type(tp):
+    """Test if the type is a final type. Examples::
+
+        is_final_type(int) == False
+        is_final_type(Final) == True
+        is_final_type(Final[int]) == True
+    """
+    if NEW_TYPING:
+        return (tp is Final or
+                isinstance(tp, _GenericAlias) and tp.__origin__ is Final)
+    return WITH_FINAL and type(tp) is _Final
 
 
 def is_union_type(tp):
@@ -439,7 +461,7 @@ def get_args(tp, evaluate=None):
                 res = (list(res[:-1]), res[-1])
             return res
         return ()
-    if is_classvar(tp):
+    if is_classvar(tp) or is_final_type(tp):
         return (tp.__type__,) if tp.__type__ is not None else ()
     if is_literal_type(tp):
         return tp.__values__ or ()
