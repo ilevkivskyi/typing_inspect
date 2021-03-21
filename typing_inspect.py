@@ -30,6 +30,11 @@ if NEW_TYPING:
         Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
     )
     from typing_extensions import Final, Literal
+    if sys.version_info[:3] >= (3, 9, 0):
+        from typing import _SpecialGenericAlias
+        typingGenericAlias = (_GenericAlias, _SpecialGenericAlias)
+    else:
+        typingGenericAlias = (_GenericAlias,)
 else:
     from typing import (
         Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
@@ -89,7 +94,7 @@ def is_generic_type(tp):
     """
     if NEW_TYPING:
         return (isinstance(tp, type) and issubclass(tp, Generic) or
-                isinstance(tp, _GenericAlias) and
+                isinstance(tp, typingGenericAlias) and
                 tp.__origin__ not in (Union, tuple, ClassVar, collections.abc.Callable))
     return (isinstance(tp, GenericMeta) and not
             isinstance(tp, (CallableMeta, TupleMeta)))
@@ -115,7 +120,7 @@ def is_callable_type(tp):
         get_origin(tp) is collections.abc.Callable  # Callable prior to Python 3.7
     """
     if NEW_TYPING:
-        return (tp is Callable or isinstance(tp, _GenericAlias) and
+        return (tp is Callable or isinstance(tp, typingGenericAlias) and
                 tp.__origin__ is collections.abc.Callable or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 issubclass(tp, collections.abc.Callable))
@@ -141,7 +146,7 @@ def is_tuple_type(tp):
         get_origin(tp) is tuple  # Tuple prior to Python 3.7
     """
     if NEW_TYPING:
-        return (tp is Tuple or isinstance(tp, _GenericAlias) and
+        return (tp is Tuple or isinstance(tp, typingGenericAlias) and
                 tp.__origin__ is tuple or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 issubclass(tp, tuple))
@@ -178,7 +183,7 @@ def is_final_type(tp):
     """
     if NEW_TYPING:
         return (tp is Final or
-                isinstance(tp, _GenericAlias) and tp.__origin__ is Final)
+                isinstance(tp, typingGenericAlias) and tp.__origin__ is Final)
     return WITH_FINAL and type(tp) is _Final
 
 
@@ -192,14 +197,14 @@ def is_union_type(tp):
     """
     if NEW_TYPING:
         return (tp is Union or
-                isinstance(tp, _GenericAlias) and tp.__origin__ is Union)
+                isinstance(tp, typingGenericAlias) and tp.__origin__ is Union)
     return type(tp) is _Union
 
 
 def is_literal_type(tp):
     if NEW_TYPING:
         return (tp is Literal or
-                isinstance(tp, _GenericAlias) and tp.__origin__ is Literal)
+                isinstance(tp, typingGenericAlias) and tp.__origin__ is Literal)
     return WITH_LITERAL and type(tp) is _Literal
 
 
@@ -224,7 +229,7 @@ def is_classvar(tp):
     """
     if NEW_TYPING:
         return (tp is ClassVar or
-                isinstance(tp, _GenericAlias) and tp.__origin__ is ClassVar)
+                isinstance(tp, typingGenericAlias) and tp.__origin__ is ClassVar)
     elif WITH_CLASSVAR:
         return type(tp) is _ClassVar
     else:
@@ -290,7 +295,7 @@ def get_origin(tp):
         get_origin(List[Tuple[T, T]][int]) == list  # List prior to Python 3.7
     """
     if NEW_TYPING:
-        if isinstance(tp, _GenericAlias):
+        if isinstance(tp, typingGenericAlias):
             return tp.__origin__ if tp.__origin__ is not ClassVar else None
         if tp is Generic:
             return Generic
@@ -355,7 +360,7 @@ def get_parameters(tp):
         else:
             return ()
     elif NEW_TYPING:
-        if (isinstance(tp, _GenericAlias) or
+        if (isinstance(tp, typingGenericAlias) or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 tp is not Generic):
             return tp.__parameters__
