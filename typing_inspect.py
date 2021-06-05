@@ -9,7 +9,7 @@ Example usage::
 
 import sys
 from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
-if sys.version_info[:3] >= (3, 4, 0) and sys.version_info[:3] < (3, 9, 0):
+if (3, 4, 0) <= sys.version_info[:3] < (3, 9, 0):
     from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
 elif sys.version_info[:3] >= (3, 9, 0):
     # typing_extensions.TypedDict is a re-export from typing.
@@ -485,7 +485,7 @@ def get_args(tp, evaluate=None):
                 # backport of union's subs_tree
                 tree = _union_subs_tree(tp)
             elif is_generic_type(tp):
-                # backport of genericmeta's subs_tree
+                # backport of GenericMeta's subs_tree
                 tree = _generic_subs_tree(tp)
             elif is_tuple_type(tp):
                 # ad-hoc (inspired by union)
