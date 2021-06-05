@@ -8,7 +8,10 @@ Example usage::
 # NOTE: This module must support Python 2.7 in addition to Python 3.x
 
 import sys
+import types
+
 from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
+
 if (3, 4, 0) <= sys.version_info[:3] < (3, 9, 0):
     from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
 elif sys.version_info[:3] >= (3, 9, 0):
@@ -35,7 +38,7 @@ if NEW_TYPING:
     from typing_extensions import Final, Literal
     if sys.version_info[:3] >= (3, 9, 0):
         from typing import _SpecialGenericAlias
-        typingGenericAlias = (_GenericAlias, _SpecialGenericAlias)
+        typingGenericAlias = (_GenericAlias, _SpecialGenericAlias, types.GenericAlias)
     else:
         typingGenericAlias = (_GenericAlias,)
 else:
