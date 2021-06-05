@@ -115,6 +115,7 @@ class Other(dict):
 """
 
 PY36 = sys.version_info[:3] >= (3, 6, 0)
+PY39 = sys.version_info[:3] >= (3, 9, 0)
 if PY36:
     exec(PY36_TESTS)
 
@@ -131,6 +132,8 @@ class IsUtilityTestCase(TestCase):
         T = TypeVar('T')
         samples = [Generic, Generic[T], Iterable[int], Mapping,
                    MutableMapping[T, List[int]], Sequence[Union[str, bytes]]]
+        if PY39:
+            samples.extend([list[int], dict[str, list[int]]])
         nonsamples = [int, Union[int, str], Union[int, T], Callable[..., T],
                       Optional, bytes, list] + CLASSVAR_GENERIC
         self.sample_test(is_generic_type, samples, nonsamples)
@@ -149,6 +152,8 @@ class IsUtilityTestCase(TestCase):
 
     def test_tuple(self):
         samples = [Tuple, Tuple[str, int], Tuple[Iterable, ...]]
+        if PY39:
+            samples.append(tuple[int, str])
         nonsamples = [int, tuple, 42, List[int], NamedTuple('N', [('x', int)])]
         self.sample_test(is_tuple_type, samples, nonsamples)
         if SUBCLASSABLE_TUPLES:
@@ -301,6 +306,8 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
+        if PY39:
+            self.assertEqual(get_origin(list[int]), list)
         if GENERIC_TUPLE_PARAMETRIZABLE:
             tp = List[Tuple[T, T]][int]
             self.assertEqual(get_origin(tp), list if NEW_TYPING else List)
@@ -323,6 +330,8 @@ class GetUtilityTestCase(TestCase):
         if EXISTING_UNIONS_SUBSCRIPTABLE:
             self.assertEqual(get_parameters(Union[S_co, Tuple[T, T]][int, U]), (U,))
         self.assertEqual(get_parameters(Mapping[T, Tuple[S_co, T]]), (T, S_co))
+        if PY39:
+            self.assertEqual(get_parameters(dict[int, T]), (T,))
 
     @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_last_args(self):
@@ -388,6 +397,11 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_args(Literal, evaluate=True), ())
             self.assertEqual(get_args(Literal["value"], evaluate=True), ("value",))
             self.assertEqual(get_args(Literal[1, 2, 3], evaluate=True), (1, 2, 3))
+
+        if PY39:
+            self.assertEqual(get_args(list[int]), (int,))
+            self.assertEqual(get_args(tuple[int, str]), (int, str))
+            self.assertEqual(get_args(list[list[int]]), (list[int],))
 
     def test_bound(self):
         T = TypeVar('T')

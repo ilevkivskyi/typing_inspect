@@ -8,10 +8,14 @@ Example usage::
 # NOTE: This module must support Python 2.7 in addition to Python 3.x
 
 import sys
+import types
+
 from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
-if sys.version_info[:3] >= (3, 4, 0) and sys.version_info[:3] < (3, 9, 0):
+
+# See comments in typing_extensions source on why the switch is at 3.9.2
+if (3, 4, 0) <= sys.version_info[:3] < (3, 9, 2):
     from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
-elif sys.version_info[:3] >= (3, 9, 0):
+elif sys.version_info[:3] >= (3, 9, 2):
     # typing_extensions.TypedDict is a re-export from typing.
     from typing import _TypedDictMeta as _TypedDictMeta_TE
 else:
@@ -35,7 +39,7 @@ if NEW_TYPING:
     from typing_extensions import Final, Literal
     if sys.version_info[:3] >= (3, 9, 0):
         from typing import _SpecialGenericAlias
-        typingGenericAlias = (_GenericAlias, _SpecialGenericAlias)
+        typingGenericAlias = (_GenericAlias, _SpecialGenericAlias, types.GenericAlias)
     else:
         typingGenericAlias = (_GenericAlias,)
 else:
@@ -463,7 +467,7 @@ def get_args(tp, evaluate=None):
     if NEW_TYPING:
         if evaluate is not None and not evaluate:
             raise ValueError('evaluate can only be True in Python >= 3.7')
-        if isinstance(tp, _GenericAlias):
+        if isinstance(tp, typingGenericAlias):
             res = tp.__args__
             if get_origin(tp) is collections.abc.Callable and res[0] is not Ellipsis:
                 res = (list(res[:-1]), res[-1])
@@ -485,7 +489,7 @@ def get_args(tp, evaluate=None):
                 # backport of union's subs_tree
                 tree = _union_subs_tree(tp)
             elif is_generic_type(tp):
-                # backport of genericmeta's subs_tree
+                # backport of GenericMeta's subs_tree
                 tree = _generic_subs_tree(tp)
             elif is_tuple_type(tp):
                 # ad-hoc (inspired by union)
