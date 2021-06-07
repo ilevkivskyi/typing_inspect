@@ -402,6 +402,8 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_args(list[int]), (int,))
             self.assertEqual(get_args(tuple[int, str]), (int, str))
             self.assertEqual(get_args(list[list[int]]), (list[int],))
+            # This would return (~T,) before Python 3.9.
+            self.assertEqual(get_args(List), ())
 
     def test_bound(self):
         T = TypeVar('T')
