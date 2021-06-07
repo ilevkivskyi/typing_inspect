@@ -467,7 +467,8 @@ def get_args(tp, evaluate=None):
     if NEW_TYPING:
         if evaluate is not None and not evaluate:
             raise ValueError('evaluate can only be True in Python >= 3.7')
-        if isinstance(tp, typingGenericAlias):
+        # Note special aliases on Python 3.9 don't have __args__.
+        if isinstance(tp, typingGenericAlias) and hasattr(tp, '__args__'):
             res = tp.__args__
             if get_origin(tp) is collections.abc.Callable and res[0] is not Ellipsis:
                 res = (list(res[:-1]), res[-1])
