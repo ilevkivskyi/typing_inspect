@@ -12,10 +12,10 @@ import types
 
 from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
 
-# See comments in typing_extensions source on why the switch is at 3.9.2
-if (3, 4, 0) <= sys.version_info[:3] < (3, 9, 2):
+# See comments in typing_extensions source on why the switch is at 3.9
+if (3, 4, 0) <= sys.version_info[:3] < (3, 9):
     from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
-elif sys.version_info[:3] >= (3, 9, 2):
+elif sys.version_info[:3] >= (3, 9):
     # typing_extensions.TypedDict is a re-export from typing.
     from typing import _TypedDictMeta as _TypedDictMeta_TE
 else:
