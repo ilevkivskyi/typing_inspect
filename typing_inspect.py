@@ -34,7 +34,8 @@ LEGACY_TYPING = False
 
 if NEW_TYPING:
     from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias,
+        ForwardRef, NewType,
     )
     from typing_extensions import Final, Literal
     if sys.version_info[:3] >= (3, 9, 0):
@@ -44,7 +45,8 @@ if NEW_TYPING:
         typingGenericAlias = (_GenericAlias,)
 else:
     from typing import (
-        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
+        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta,
+        _ForwardRef, NewType,
     )
     try:
         from typing import _Union, _ClassVar
@@ -247,10 +249,17 @@ def is_new_type(tp):
     """Tests if the type represents a distinct type. Examples::
 
         is_new_type(int) == False
+        is_new_type(NewType) == True
         is_new_type(NewType('Age', int)) == True
         is_new_type(NewType('Scores', List[Dict[str, float]])) == True
     """
-    return getattr(tp, '__supertype__', None) is not None
+    if sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
+        return tp is NewType or isinstance(tp, NewType)
+    else:
+        return (tp is NewType or
+                (getattr(tp, '__supertype__', None) is not None and
+                 getattr(tp, '__qualname__', '') == 'NewType.<locals>.new_type' and
+                 tp.__module__ == 'typing'))
 
 
 def is_forward_ref(tp):
