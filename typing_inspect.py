@@ -30,6 +30,7 @@ if NEW_TYPING:
 WITH_FINAL = True
 WITH_LITERAL = True
 WITH_CLASSVAR = True
+WITH_NEWTYPE = True
 LEGACY_TYPING = False
 
 if NEW_TYPING:
@@ -46,7 +47,7 @@ if NEW_TYPING:
 else:
     from typing import (
         Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta,
-        _ForwardRef, NewType,
+        _ForwardRef,
     )
     try:
         from typing import _Union, _ClassVar
@@ -71,6 +72,14 @@ else:
             from typing import _Literal
         except ImportError:
             WITH_LITERAL = False
+
+    try:  # python < 3.5.2
+        from typing_extensions import NewType
+    except ImportError:
+        try:
+            from typing import NewType
+        except ImportError:
+            WITH_NEWTYPE = False
 
 
 def _gorg(cls):
@@ -253,7 +262,9 @@ def is_new_type(tp):
         is_new_type(NewType('Age', int)) == True
         is_new_type(NewType('Scores', List[Dict[str, float]])) == True
     """
-    if sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
+    if not WITH_NEWTYPE:
+        return False
+    elif sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
         return tp is NewType or isinstance(tp, NewType)
     else:
         return (tp is NewType or

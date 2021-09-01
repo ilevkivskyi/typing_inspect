@@ -4,7 +4,8 @@ from typing_inspect import (
     is_optional_type, is_final_type, is_literal_type, is_typevar, is_classvar,
     is_forward_ref, get_origin, get_parameters, get_last_args, get_args, get_bound,
     get_constraints, get_generic_type, get_generic_bases, get_last_origin,
-    typed_dict_keys, get_forward_arg, WITH_FINAL, WITH_LITERAL, LEGACY_TYPING)
+    typed_dict_keys, get_forward_arg, WITH_FINAL, WITH_LITERAL, LEGACY_TYPING, WITH_NEWTYPE,
+)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, Callable, Optional, TypeVar, Sequence, AnyStr, Mapping,
@@ -15,15 +16,7 @@ from mypy_extensions import TypedDict as METypedDict
 from typing_extensions import TypedDict as TETypedDict
 from typing_extensions import Final
 from typing_extensions import Literal
-
-# Does this raise an exception ?
-#      from typing import NewType
-if sys.version_info[:3] < (3, 5, 2):
-    WITH_NEWTYPE = False
-else:
-    from typing import NewType as NewType_
-    WITH_NEWTYPE = True
-
+from typing_extensions import NewType as NewType_
 
 # Does this raise an exception ?
 #      from typing import ClassVar
