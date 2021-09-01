@@ -266,10 +266,15 @@ def is_new_type(tp):
         return False
     elif sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
         return tp is NewType or isinstance(tp, NewType)
-    else:
+    elif sys.version_info[:3] >= (3, 0, 0):
         return (tp is NewType or
                 (getattr(tp, '__supertype__', None) is not None and
                  getattr(tp, '__qualname__', '') == 'NewType.<locals>.new_type' and
+                 tp.__module__ == 'typing'))
+    else:  # python 2
+        # __qualname__ is not available in python 2, so we simplify the test here
+        return (tp is NewType or
+                (getattr(tp, '__supertype__', None) is not None and
                  tp.__module__ == 'typing'))
 
 
