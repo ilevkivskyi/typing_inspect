@@ -270,12 +270,12 @@ def is_new_type(tp):
         return (tp is NewType or
                 (getattr(tp, '__supertype__', None) is not None and
                  getattr(tp, '__qualname__', '') == 'NewType.<locals>.new_type' and
-                 tp.__module__ == 'typing'))
+                 tp.__module__ in ('typing', 'typing_extensions')))
     else:  # python 2
         # __qualname__ is not available in python 2, so we simplify the test here
         return (tp is NewType or
                 (getattr(tp, '__supertype__', None) is not None and
-                 tp.__module__ == 'typing'))
+                 tp.__module__ in ('typing', 'typing_extensions')))
 
 
 def is_forward_ref(tp):
