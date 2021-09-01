@@ -18,7 +18,7 @@ from typing_extensions import Literal
 
 # Does this raise an exception ?
 #      from typing import NewType
-if sys.version_info < (3, 5, 2):
+if sys.version_info[:3] < (3, 5, 2):
     WITH_NEWTYPE = False
 else:
     from typing import NewType as NewType_
@@ -120,9 +120,9 @@ if PY36:
     exec(PY36_TESTS)
 
 
-# It is important for the test that this function is called ‘NewType’ to simulate the same __qualname__ – which is
-# “NewType.<locals>.new_type” – as typing.NewType has, i.e. it should be checked that is_new_type still do not
-# accept a function which has the same __qualname__ and an attribute called __supertype__.
+# It is important for the test that this function is called 'NewType' to simulate the same __qualname__
+# - which is "NewType.<locals>.new_type" - as typing.NewType has, i.e. it should be checked that is_new_type
+# still do not accept a function which has the same __qualname__ and an attribute called __supertype__.
 def NewType(name, tp):
     def new_type(x):
         return x
