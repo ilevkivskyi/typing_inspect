@@ -337,6 +337,8 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_origin(ClassVar[int]), None)
         self.assertEqual(get_origin(Generic), Generic)
         self.assertEqual(get_origin(Generic[T]), Generic)
+        # Cannot use assertEqual on Py3.5.2.
+        self.assertIs(get_origin(Literal[42]), Literal)
         if PY39:
             self.assertEqual(get_origin(list[int]), list)
         if GENERIC_TUPLE_PARAMETRIZABLE:

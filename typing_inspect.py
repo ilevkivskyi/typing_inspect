@@ -66,10 +66,10 @@ else:
             WITH_FINAL = False
 
     try:  # python 3.6
-        from typing_extensions import _Literal
+        from typing_extensions import Literal
     except ImportError:  # python 2.7
         try:
-            from typing import _Literal
+            from typing import Literal
         except ImportError:
             WITH_LITERAL = False
 
@@ -230,7 +230,7 @@ def is_literal_type(tp):
     if NEW_TYPING:
         return (tp is Literal or
                 isinstance(tp, typingGenericAlias) and tp.__origin__ is Literal)
-    return WITH_LITERAL and type(tp) is _Literal
+    return WITH_LITERAL and type(tp) is type(Literal)
 
 
 def is_typevar(tp):
@@ -345,6 +345,8 @@ def get_origin(tp):
         return Union
     if is_tuple_type(tp):
         return Tuple
+    if is_literal_type(tp):
+        return Literal
 
     return None
 
