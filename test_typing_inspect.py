@@ -4,7 +4,8 @@ from typing_inspect import (
     is_optional_type, is_final_type, is_literal_type, is_typevar, is_classvar,
     is_forward_ref, get_origin, get_parameters, get_last_args, get_args, get_bound,
     get_constraints, get_generic_type, get_generic_bases, get_last_origin,
-    typed_dict_keys, get_forward_arg, WITH_FINAL, WITH_LITERAL, LEGACY_TYPING)
+    typed_dict_keys, get_forward_arg, WITH_FINAL, WITH_LITERAL, LEGACY_TYPING, WITH_NEWTYPE,
+)
 from unittest import TestCase, main, skipIf, skipUnless
 from typing import (
     Union, Callable, Optional, TypeVar, Sequence, AnyStr, Mapping,
@@ -15,15 +16,7 @@ from mypy_extensions import TypedDict as METypedDict
 from typing_extensions import TypedDict as TETypedDict
 from typing_extensions import Final
 from typing_extensions import Literal
-
-# Does this raise an exception ?
-#      from typing import NewType
-if sys.version_info < (3, 5, 2):
-    WITH_NEWTYPE = False
-else:
-    from typing import NewType
-    WITH_NEWTYPE = True
-
+from typing_extensions import NewType as NewType_
 
 # Does this raise an exception ?
 #      from typing import ClassVar
@@ -118,6 +111,18 @@ PY36 = sys.version_info[:3] >= (3, 6, 0)
 PY39 = sys.version_info[:3] >= (3, 9, 0)
 if PY36:
     exec(PY36_TESTS)
+
+
+# It is important for the test that this function is called 'NewType' to simulate the same __qualname__
+# - which is "NewType.<locals>.new_type" - as typing.NewType has, i.e. it should be checked that is_new_type
+# still do not accept a function which has the same __qualname__ and an attribute called __supertype__.
+def NewType(name, tp):
+    def new_type(x):
+        return x
+
+    new_type.__name__ = name
+    new_type.__supertype__ = tp
+    return new_type
 
 
 class IsUtilityTestCase(TestCase):
@@ -248,13 +253,22 @@ class IsUtilityTestCase(TestCase):
     @skipIf(not WITH_NEWTYPE, "NewType is not present")
     def test_new_type(self):
         T = TypeVar('T')
+
+        class WithAttrSuperTypeCls:
+            __supertype__ = str
+
+        class WithAttrSuperTypeObj:
+            def __init__(self):
+                self.__supertype__ = str
+
         samples = [
-            NewType('A', int),
-            NewType('B', complex),
-            NewType('C', List[int]),
-            NewType('D', Union['p', 'y', 't', 'h', 'o', 'n']),
-            NewType('E', List[Dict[str, float]]),
-            NewType('F', NewType('F_', int)),
+            NewType_,
+            NewType_('A', int),
+            NewType_('B', complex),
+            NewType_('C', List[int]),
+            NewType_('D', Union['p', 'y', 't', 'h', 'o', 'n']),
+            NewType_('E', List[Dict[str, float]]),
+            NewType_('F', NewType('F_', int)),
         ]
         nonsamples = [
             int,
@@ -264,6 +278,12 @@ class IsUtilityTestCase(TestCase):
             Union["u", "v"],
             type,
             T,
+            NewType,
+            NewType('N', int),
+            WithAttrSuperTypeCls,
+            WithAttrSuperTypeCls(),
+            WithAttrSuperTypeObj,
+            WithAttrSuperTypeObj(),
         ]
         self.sample_test(is_new_type, samples, nonsamples)
 

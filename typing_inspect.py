@@ -30,11 +30,13 @@ if NEW_TYPING:
 WITH_FINAL = True
 WITH_LITERAL = True
 WITH_CLASSVAR = True
+WITH_NEWTYPE = True
 LEGACY_TYPING = False
 
 if NEW_TYPING:
     from typing import (
-        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias, ForwardRef
+        Generic, Callable, Union, TypeVar, ClassVar, Tuple, _GenericAlias,
+        ForwardRef, NewType,
     )
     from typing_extensions import Final, Literal
     if sys.version_info[:3] >= (3, 9, 0):
@@ -44,7 +46,8 @@ if NEW_TYPING:
         typingGenericAlias = (_GenericAlias,)
 else:
     from typing import (
-        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta, _ForwardRef
+        Callable, CallableMeta, Union, Tuple, TupleMeta, TypeVar, GenericMeta,
+        _ForwardRef,
     )
     try:
         from typing import _Union, _ClassVar
@@ -69,6 +72,14 @@ else:
             from typing import _Literal
         except ImportError:
             WITH_LITERAL = False
+
+    try:  # python < 3.5.2
+        from typing_extensions import NewType
+    except ImportError:
+        try:
+            from typing import NewType
+        except ImportError:
+            WITH_NEWTYPE = False
 
 
 def _gorg(cls):
@@ -247,10 +258,24 @@ def is_new_type(tp):
     """Tests if the type represents a distinct type. Examples::
 
         is_new_type(int) == False
+        is_new_type(NewType) == True
         is_new_type(NewType('Age', int)) == True
         is_new_type(NewType('Scores', List[Dict[str, float]])) == True
     """
-    return getattr(tp, '__supertype__', None) is not None
+    if not WITH_NEWTYPE:
+        return False
+    elif sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
+        return tp is NewType or isinstance(tp, NewType)
+    elif sys.version_info[:3] >= (3, 0, 0):
+        return (tp is NewType or
+                (getattr(tp, '__supertype__', None) is not None and
+                 getattr(tp, '__qualname__', '') == 'NewType.<locals>.new_type' and
+                 tp.__module__ in ('typing', 'typing_extensions')))
+    else:  # python 2
+        # __qualname__ is not available in python 2, so we simplify the test here
+        return (tp is NewType or
+                (getattr(tp, '__supertype__', None) is not None and
+                 tp.__module__ in ('typing', 'typing_extensions')))
 
 
 def is_forward_ref(tp):
