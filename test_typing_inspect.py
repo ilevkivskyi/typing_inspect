@@ -1,4 +1,7 @@
 import sys
+
+import pytest
+
 from typing_inspect import (
     is_generic_type, is_callable_type, is_new_type, is_tuple_type, is_union_type,
     is_optional_type, is_final_type, is_literal_type, is_typevar, is_classvar,
@@ -171,6 +174,14 @@ class IsUtilityTestCase(TestCase):
         S = TypeVar('S')
         samples = [Union, Union[T, int], Union[int, Union[T, S]]]
         nonsamples = [int, Union[int, int], [], Iterable[Any]]
+        self.sample_test(is_union_type, samples, nonsamples)
+
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="requires 3.10 or higher")
+    def test_union_pep604(self):
+        T = TypeVar('T')
+        S = TypeVar('S')
+        samples = [T | int, int | (T | S), int | str]
+        nonsamples = [int, int | int, [], Iterable[Any]]
         self.sample_test(is_union_type, samples, nonsamples)
 
     def test_optional_type(self):

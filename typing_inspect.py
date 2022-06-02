@@ -205,6 +205,12 @@ def is_final_type(tp):
     return WITH_FINAL and type(tp) is _Final
 
 
+try:
+    MaybeUnionType = types.UnionType
+except AttributeError:
+    MaybeUnionType = None
+
+
 def is_union_type(tp):
     """Test if the type is a union type. Examples::
 
@@ -215,7 +221,8 @@ def is_union_type(tp):
     """
     if NEW_TYPING:
         return (tp is Union or
-                isinstance(tp, typingGenericAlias) and tp.__origin__ is Union)
+                (isinstance(tp, typingGenericAlias) and tp.__origin__ is Union) or
+                (MaybeUnionType and isinstance(tp, MaybeUnionType)))
     return type(tp) is _Union
 
 
