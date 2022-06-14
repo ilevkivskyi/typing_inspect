@@ -4,6 +4,7 @@ importlib-metadata<3.0; python_version < '3.6'
 packaging<21.0; python_version < '3.6'
 pytest~=4.6; python_version < '3.6'
 pytest>=4.6; python_version >= '3.6' 
+pathlib2 < 2.3.7; python_version == '3.5.0' or python_version == '3.5.1'
 typing >= 3.7.4; python_version < '3.5'
 mypy_extensions >= 0.3.0
 typing_extensions >= 3.7.4; python_version >= '3.6'
