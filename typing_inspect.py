@@ -16,8 +16,13 @@ from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
 if (3, 4, 0) <= sys.version_info[:3] < (3, 9, 2):
     from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
 elif sys.version_info[:3] >= (3, 9, 2):
-    # typing_extensions.TypedDict is a re-export from typing.
-    from typing import _TypedDictMeta as _TypedDictMeta_TE
+    # Situation with typing_extensions.TypedDict is complicated.
+    # Use the one defined in typing_extentions, and if there is none,
+    # fall back to typing.
+    try:
+        from typing_extensions import _TypedDictMeta as _TypedDictMeta_TE
+    except ImportError:
+        from typing import _TypedDictMeta as _TypedDictMeta_TE
 else:
     # typing_extensions.TypedDict is a re-export from typing.
     from typing import TypedDict
