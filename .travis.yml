@@ -5,6 +5,7 @@ matrix:
   fast_finish: true
   include:
     - python: "3.10"
+      dist: focal
     - python: 3.9
     - python: 3.9.1
     - python: 3.8
