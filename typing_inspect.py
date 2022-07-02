@@ -223,6 +223,8 @@ def is_union_type(tp):
         is_union_type(Union) == True
         is_union_type(Union[int, int]) == False
         is_union_type(Union[T, int]) == True
+        is_union_type(int | int) == False
+        is_union_type(T | int) == True
     """
     if NEW_TYPING:
         return (tp is Union or
@@ -512,6 +514,8 @@ def get_args(tp, evaluate=None):
             if get_origin(tp) is collections.abc.Callable and res[0] is not Ellipsis:
                 res = (list(res[:-1]), res[-1])
             return res
+        if MaybeUnionType and isinstance(tp, MaybeUnionType):
+            return tp.__args__
         return ()
     if is_classvar(tp) or is_final_type(tp):
         return (tp.__type__,) if tp.__type__ is not None else ()
