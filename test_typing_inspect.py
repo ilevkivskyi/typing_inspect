@@ -438,6 +438,10 @@ class GetUtilityTestCase(TestCase):
             # This would return (~T,) before Python 3.9.
             self.assertEqual(get_args(List), ())
 
+        if sys.version_info >= (3, 10):
+            self.assertEqual(get_args(int | str), (int, str))
+            self.assertEqual(get_args((int | tuple[T, int])[str]), (int, tuple[str, int]))
+
     def test_bound(self):
         T = TypeVar('T')
         TB = TypeVar('TB', bound=int)
