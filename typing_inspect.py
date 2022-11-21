@@ -408,7 +408,11 @@ def get_parameters(tp):
         else:
             return ()
     elif NEW_TYPING:
-        if (isinstance(tp, typingGenericAlias) or
+        if (
+                (
+                    isinstance(tp, typingGenericAlias) and
+                    hasattr(tp, '__parameters__')
+                ) or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 tp is not Generic):
             return tp.__parameters__
