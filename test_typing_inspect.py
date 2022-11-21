@@ -14,6 +14,7 @@ from typing import (
     Union, Callable, Optional, TypeVar, Sequence, AnyStr, Mapping,
     MutableMapping, Iterable, Generic, List, Any, Dict, Tuple, NamedTuple,
 )
+from typing import T as typing_T
 
 from mypy_extensions import TypedDict as METypedDict
 from typing_extensions import TypedDict as TETypedDict
@@ -357,7 +358,7 @@ class GetUtilityTestCase(TestCase):
             if PY39:
                 self.assertEqual(get_parameters(List), ())
             else:
-                self.assertEqual(get_parameters(List), (T,))
+                self.assertEqual(get_parameters(List), (typing_T,))
         else:
             # in 3.5.3 a list has no __args__ and instead they are used in __parameters__
             # in 3.5.1 the behaviour is normal again.
