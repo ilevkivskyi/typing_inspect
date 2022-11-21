@@ -354,6 +354,10 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_parameters(Union), ())
         if not LEGACY_TYPING:
             self.assertEqual(get_parameters(List[int]), ())
+            if PY39:
+                self.assertEqual(get_parameters(List), ())
+            else:
+                self.assertEqual(get_parameters(List), (T,))
         else:
             # in 3.5.3 a list has no __args__ and instead they are used in __parameters__
             # in 3.5.1 the behaviour is normal again.
