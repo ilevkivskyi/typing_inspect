@@ -510,6 +510,7 @@ class GetUtilityTestCase(TestCase):
 
     def test_is_union_type(self):
         self.assertTrue(is_union_type(int) is not None)
+        self.assertFalse(is_union_type(int))
 
 if __name__ == '__main__':
     main()
