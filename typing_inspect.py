@@ -213,7 +213,7 @@ def is_final_type(tp):
 try:
     MaybeUnionType = types.UnionType
 except AttributeError:
-    MaybeUnionType = None
+    MaybeUnionType = False
 
 
 def is_union_type(tp):
