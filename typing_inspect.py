@@ -9,6 +9,8 @@ Example usage::
 
 import sys
 import types
+import typing
+import typing_extensions
 
 from mypy_extensions import _TypedDictMeta as _TypedDictMeta_Mypy
 
@@ -233,10 +235,15 @@ def is_union_type(tp):
     return type(tp) is _Union
 
 
+LITERALS = {Literal}
+if hasattr(typing, "Literal"):
+    LITERALS.add(typing.Literal)
+
+
 def is_literal_type(tp):
     if NEW_TYPING:
-        return (tp is Literal or
-                isinstance(tp, typingGenericAlias) and tp.__origin__ is Literal)
+        return (tp in LITERALS or
+                isinstance(tp, typingGenericAlias) and tp.__origin__ in LITERALS)
     return WITH_LITERAL and type(tp) is type(Literal)
 
 
@@ -281,7 +288,14 @@ def is_new_type(tp):
     elif sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
         return tp is NewType or isinstance(tp, NewType)
     elif sys.version_info[:3] >= (3, 0, 0):
-        return (tp is NewType or
+        try:
+            res = isinstance(tp, typing_extensions.NewType)
+        except TypeError:
+            pass
+        else:
+            if res:
+                return res
+        return (tp is NewType or tp is typing_extensions.NewType or
                 (getattr(tp, '__supertype__', None) is not None and
                  getattr(tp, '__qualname__', '') == 'NewType.<locals>.new_type' and
                  tp.__module__ in ('typing', 'typing_extensions')))
@@ -353,6 +367,8 @@ def get_origin(tp):
     if is_tuple_type(tp):
         return Tuple
     if is_literal_type(tp):
+        if NEW_TYPING:
+            return tp.__origin__ or tp
         return Literal
 
     return None
