@@ -239,10 +239,13 @@ class IsUtilityTestCase(TestCase):
             Literal,
             Literal["v"],
             Literal[1, 2, 3],
-            typing.Literal,
-            typing.Literal["v"],
-            typing.Literal[1, 2, 3],
         ]
+        if hasattr(typing, "Literal"):
+            samples += [
+                typing.Literal,
+                typing.Literal["v"],
+                typing.Literal[1, 2, 3],
+            ]
         nonsamples = [
             "v",
             (1, 2, 3),
@@ -344,7 +347,8 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_origin(Generic[T]), Generic)
         # Cannot use assertEqual on Py3.5.2.
         self.assertIs(get_origin(Literal[42]), Literal)
-        self.assertIs(get_origin(typing.Literal[42]), typing.Literal)
+        if hasattr(typing, "Literal"):
+            self.assertIs(get_origin(typing.Literal[42]), typing.Literal)
         if PY39:
             self.assertEqual(get_origin(list[int]), list)
         if GENERIC_TUPLE_PARAMETRIZABLE:
@@ -440,9 +444,10 @@ class GetUtilityTestCase(TestCase):
             self.assertEqual(get_args(Literal, evaluate=True), ())
             self.assertEqual(get_args(Literal["value"], evaluate=True), ("value",))
             self.assertEqual(get_args(Literal[1, 2, 3], evaluate=True), (1, 2, 3))
-            self.assertEqual(get_args(typing.Literal, evaluate=True), ())
-            self.assertEqual(get_args(typing.Literal["value"], evaluate=True), ("value",))
-            self.assertEqual(get_args(typing.Literal[1, 2, 3], evaluate=True), (1, 2, 3))
+            if hasattr(typing, "Literal"):
+                self.assertEqual(get_args(typing.Literal, evaluate=True), ())
+                self.assertEqual(get_args(typing.Literal["value"], evaluate=True), ("value",))
+                self.assertEqual(get_args(typing.Literal[1, 2, 3], evaluate=True), (1, 2, 3))
 
         if PY39:
             self.assertEqual(get_args(list[int]), (int,))
