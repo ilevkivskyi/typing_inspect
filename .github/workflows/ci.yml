@@ -38,7 +38,7 @@ jobs:
           pip install -r test-requirements.txt
           py.test
 
-  tests:
+  tests_old:
     name: Run tests (old versions)
 
     strategy:
