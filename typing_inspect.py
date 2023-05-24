@@ -286,7 +286,8 @@ def is_new_type(tp):
     if not WITH_NEWTYPE:
         return False
     elif sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
-        return tp in (NewType, typing_extensions.NewType) or isinstance(tp, (NewType, typing_extensions.NewType))
+        return (tp in (NewType, typing_extensions.NewType) or
+                isinstance(tp, (NewType, typing_extensions.NewType)))
     elif sys.version_info[:3] >= (3, 0, 0):
         try:
             res = isinstance(tp, typing_extensions.NewType)
