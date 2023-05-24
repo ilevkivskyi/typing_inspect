@@ -286,7 +286,7 @@ def is_new_type(tp):
     if not WITH_NEWTYPE:
         return False
     elif sys.version_info[:3] >= (3, 10, 0) and sys.version_info.releaselevel != 'beta':
-        return tp is NewType or isinstance(tp, NewType)
+        return tp in (NewType, typing_extensions.NewType) or isinstance(tp, (NewType, typing_extensions.NewType))
     elif sys.version_info[:3] >= (3, 0, 0):
         try:
             res = isinstance(tp, typing_extensions.NewType)
@@ -295,7 +295,7 @@ def is_new_type(tp):
         else:
             if res:
                 return res
-        return (tp is NewType or tp is typing_extensions.NewType or
+        return (tp in (NewType, typing_extensions.NewType) or
                 (getattr(tp, '__supertype__', None) is not None and
                  getattr(tp, '__qualname__', '') == 'NewType.<locals>.new_type' and
                  tp.__module__ in ('typing', 'typing_extensions')))
