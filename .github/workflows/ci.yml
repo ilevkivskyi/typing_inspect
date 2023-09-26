@@ -36,7 +36,7 @@ jobs:
       - name: Test typing_inspect
         run: |
           pip install -r test-requirements.txt
-          py.test
+          pytest
 
   linting:
     name: Lint
