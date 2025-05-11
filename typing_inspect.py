@@ -33,6 +33,9 @@ else:
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
     import collections.abc
+WITH_PIPE_UNION = sys.version_info[:3] >= (3, 10, 0)  # PEP 604
+if WITH_PIPE_UNION:
+    from types import UnionType
 
 WITH_FINAL = True
 WITH_LITERAL = True
@@ -430,6 +433,7 @@ def get_parameters(tp):
                     isinstance(tp, typingGenericAlias) and
                     hasattr(tp, '__parameters__')
                 ) or
+                (WITH_PIPE_UNION and isinstance(tp, UnionType)) or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 tp is not Generic):
             return tp.__parameters__

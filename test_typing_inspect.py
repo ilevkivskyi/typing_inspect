@@ -4,7 +4,7 @@ import typing
 import pytest
 
 from typing_inspect import (
-    is_generic_type, is_callable_type, is_new_type, is_tuple_type, is_union_type,
+    WITH_PIPE_UNION, is_generic_type, is_callable_type, is_new_type, is_tuple_type, is_union_type,
     is_optional_type, is_final_type, is_literal_type, is_typevar, is_classvar,
     is_forward_ref, get_origin, get_parameters, get_last_args, get_args, get_bound,
     get_constraints, get_generic_type, get_generic_bases, get_last_origin,
@@ -379,6 +379,9 @@ class GetUtilityTestCase(TestCase):
         self.assertEqual(get_parameters(Mapping[T, Tuple[S_co, T]]), (T, S_co))
         if PY39:
             self.assertEqual(get_parameters(dict[int, T]), (T,))
+        if WITH_PIPE_UNION:
+            self.assertEqual(get_parameters(int | str), ())
+            self.assertEqual(get_parameters(int | list[T]), (T,))
 
     @skipIf(NEW_TYPING, "Not supported in Python 3.7")
     def test_last_args(self):
