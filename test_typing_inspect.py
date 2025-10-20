@@ -114,6 +114,7 @@ class Other(dict):
 
 PY36 = sys.version_info[:3] >= (3, 6, 0)
 PY39 = sys.version_info[:3] >= (3, 9, 0)
+PY314 = sys.version_info[:3] >= (3, 14, 0)
 if PY36:
     exec(PY36_TESTS)
 
@@ -494,7 +495,7 @@ class GetUtilityTestCase(TestCase):
                          (List[int], Mapping[str, List[int]]))
         self.assertEqual(get_generic_bases(int), ())
 
-    @skipUnless(PY36, "Python 3.6 required")
+    @skipUnless(PY36 and not PY314, "Python 3.6 required")
     def test_typed_dict_mypy_extension(self):
         TDOld = METypedDict("TDOld", {'x': int, 'y': int})
         self.assertEqual(typed_dict_keys(TDM), {'x': int, 'y': int})
