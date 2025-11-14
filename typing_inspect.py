@@ -428,7 +428,9 @@ def get_parameters(tp):
         else:
             return ()
     elif NEW_TYPING:
-        if (
+        if is_tuple_type(tp):
+            return tp.__parameters__ if hasattr(tp, "__parameters__") else ()
+        elif (
                 (
                     isinstance(tp, typingGenericAlias) and
                     hasattr(tp, '__parameters__')
@@ -436,6 +438,7 @@ def get_parameters(tp):
                 (WITH_PIPE_UNION and isinstance(tp, UnionType)) or
                 isinstance(tp, type) and issubclass(tp, Generic) and
                 tp is not Generic):
+
             return tp.__parameters__
         else:
             return ()
