@@ -355,6 +355,7 @@ class GetUtilityTestCase(TestCase):
         if GENERIC_TUPLE_PARAMETRIZABLE:
             tp = List[Tuple[T, T]][int]
             self.assertEqual(get_origin(tp), list if NEW_TYPING else List)
+        self.assertIs(get_origin(Union[str, int]), typing.Union)
 
     def test_parameters(self):
         T = TypeVar('T')

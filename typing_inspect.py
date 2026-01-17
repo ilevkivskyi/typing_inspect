@@ -359,7 +359,13 @@ def get_origin(tp):
         get_origin(List[Tuple[T, T]][int]) == list  # List prior to Python 3.7
     """
     if NEW_TYPING:
-        if isinstance(tp, typingGenericAlias):
+        if (
+            isinstance(tp, typingGenericAlias)
+            # In Python 3.14, Union[...] is not an instance of
+            # typingGenericAlias, but it does have an `__origin__`, so check for
+            # Unions explicitly.
+            or is_union_type(tp)
+        ):
             return tp.__origin__ if tp.__origin__ is not ClassVar else None
         if tp is Generic:
             return Generic
