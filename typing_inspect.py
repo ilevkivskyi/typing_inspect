@@ -360,11 +360,11 @@ def get_origin(tp):
     """
     if NEW_TYPING:
         if (
-            isinstance(tp, typingGenericAlias)
+            isinstance(tp, typingGenericAlias) or
             # In Python 3.14, Union[...] is not an instance of
             # typingGenericAlias, but it does have an `__origin__`, so check for
             # Unions explicitly.
-            or is_union_type(tp)
+            is_union_type(tp)
         ):
             return tp.__origin__ if tp.__origin__ is not ClassVar else None
         if tp is Generic:
