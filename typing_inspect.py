@@ -356,9 +356,12 @@ def get_origin(tp):
         get_origin(Generic) == Generic
         get_origin(Generic[T]) == Generic
         get_origin(Union[T, int]) == Union
+        get_origin(int | str) == types.UnionType  # Python 3.10+
         get_origin(List[Tuple[T, T]][int]) == list  # List prior to Python 3.7
     """
     if NEW_TYPING:
+        if WITH_PIPE_UNION and isinstance(tp, UnionType):
+            return UnionType
         if (
             isinstance(tp, typingGenericAlias) or
             # In Python 3.14, Union[...] is not an instance of
