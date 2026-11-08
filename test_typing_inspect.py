@@ -514,6 +514,40 @@ class GetUtilityTestCase(TestCase):
         self.assertIs(typed_dict_keys(Other), None)
         self.assertIsNot(typed_dict_keys(TDE), TDE.__annotations__)
 
+    @skipUnless(hasattr(typing, 'TypedDict'), "Python 3.8 required")
+    def test_typed_dict_standard_library(self):
+        class TD(typing.TypedDict):
+            x: int
+            y: str
+
+        functional = typing.TypedDict('Functional', {'x': int, 'y': str})
+        empty = typing.TypedDict('Empty', {})
+        for td in (TD, functional, empty):
+            with self.subTest(td=td):
+                result = typed_dict_keys(td)
+                self.assertEqual(result, td.__annotations__)
+                self.assertIsNot(result, td.__annotations__)
+                result['extra'] = bool
+                self.assertNotIn('extra', td.__annotations__)
+
+    @skipUnless(hasattr(typing, 'TypedDict'), "Python 3.8 required")
+    def test_typed_dict_standard_library_inheritance(self):
+        class Parent(typing.TypedDict):
+            required: int
+
+        class Child(Parent, total=False):
+            optional: str
+
+        self.assertEqual(typed_dict_keys(Child), {'required': int, 'optional': str})
+        self.assertEqual(typed_dict_keys(Parent), {'required': int})
+
+    @skipUnless(hasattr(typing, 'TypedDict'), "Python 3.8 required")
+    def test_typed_dict_rejects_non_typed_dicts(self):
+        td = typing.TypedDict('TD', {'x': int})
+        for other in (td(x=1), dict, Other, int, None):
+            with self.subTest(other=other):
+                self.assertIsNone(typed_dict_keys(other))
+
     @skipIf(
         (3, 5, 2) > sys.version_info[:3] >= (3, 5, 0),
         "get_args doesn't work in Python 3.5.0 and 3.5.1 for type"
