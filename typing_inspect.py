@@ -30,6 +30,10 @@ else:
     from typing import TypedDict
     _TypedDictMeta_TE = type(TypedDict)
 
+_TYPED_DICT_META_TYPES = (_TypedDictMeta_Mypy, _TypedDictMeta_TE)
+if hasattr(typing, '_TypedDictMeta'):
+    _TYPED_DICT_META_TYPES += (typing._TypedDictMeta,)
+
 NEW_TYPING = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 if NEW_TYPING:
     import collections.abc
@@ -662,7 +666,7 @@ def typed_dict_keys(td):
         typed_dict_keys(dict) == None
         typed_dict_keys(Other) == None
     """
-    if isinstance(td, (_TypedDictMeta_Mypy, _TypedDictMeta_TE)):
+    if isinstance(td, _TYPED_DICT_META_TYPES):
         return td.__annotations__.copy()
     return None
 
